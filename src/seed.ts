@@ -1,30 +1,34 @@
 import { Config } from 'payload'
 
 export const seed: NonNullable<Config['onInit']> = async (payload): Promise<void> => {
+  const payloadAny = payload as any
   const tenant1 = await payload.create({
     collection: 'tenants',
     data: {
-      name: 'Tenant 1',
+      name: 'Sekolah Emas',
       slug: 'gold',
       domain: 'gold.localhost',
+      allowPublicRead: true,
     },
   })
 
   const tenant2 = await payload.create({
     collection: 'tenants',
     data: {
-      name: 'Tenant 2',
+      name: 'Sekolah Perak',
       slug: 'silver',
       domain: 'silver.localhost',
+      allowPublicRead: true,
     },
   })
 
   const tenant3 = await payload.create({
     collection: 'tenants',
     data: {
-      name: 'Tenant 3',
+      name: 'Sekolah Gangsa',
       slug: 'bronze',
       domain: 'bronze.localhost',
+      allowPublicRead: true,
     },
   })
 
@@ -131,4 +135,60 @@ export const seed: NonNullable<Config['onInit']> = async (payload): Promise<void
       title: 'Page for Tenant 3',
     },
   })
+
+  // School intros (one per tenant)
+  await payloadAny.create({
+    collection: 'school-intros',
+    data: {
+      tenant: tenant1.id,
+      headline: 'Selamat datang ke Sekolah Emas',
+      intro: 'Sekolah Emas memberi tumpuan kepada kecemerlangan akademik dan sahsiah.',
+    },
+  })
+
+  await payloadAny.create({
+    collection: 'school-intros',
+    data: {
+      tenant: tenant2.id,
+      headline: 'Selamat datang ke Sekolah Perak',
+      intro: 'Sekolah Perak menekankan pembelajaran seumur hidup dan komuniti.',
+    },
+  })
+
+  await payloadAny.create({
+    collection: 'school-intros',
+    data: {
+      tenant: tenant3.id,
+      headline: 'Selamat datang ke Sekolah Gangsa',
+      intro: 'Sekolah Gangsa membina asas kukuh untuk masa depan.',
+    },
+  })
+
+  // Articles per tenant
+  const createArticle = async (
+    tenantId: string | number,
+    index: number,
+    prefix: string,
+  ) => {
+    await payloadAny.create({
+      collection: 'articles',
+      data: {
+        tenant: tenantId,
+        title: `${prefix} Artikel ${index}`,
+        slug: `${prefix.toLowerCase()}-artikel-${index}`,
+        excerpt: 'Ringkasan artikel untuk pratonton.',
+        content: 'Kandungan artikel ringkas untuk versi alpha.',
+        publishedAt: new Date().toISOString(),
+      },
+    })
+  }
+
+  await Promise.all([
+    createArticle(tenant1.id, 1, 'Emas'),
+    createArticle(tenant1.id, 2, 'Emas'),
+    createArticle(tenant2.id, 1, 'Perak'),
+    createArticle(tenant2.id, 2, 'Perak'),
+    createArticle(tenant3.id, 1, 'Gangsa'),
+    createArticle(tenant3.id, 2, 'Gangsa'),
+  ])
 }

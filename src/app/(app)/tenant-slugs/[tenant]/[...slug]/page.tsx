@@ -1,8 +1,7 @@
 import type { Where } from 'payload'
 
 import configPromise from '@payload-config'
-import { headers as getHeaders } from 'next/headers'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import React from 'react'
 
@@ -16,41 +15,11 @@ export default async function Page({
 }) {
   const params = await paramsPromise
 
-  const headers = await getHeaders()
   const payload = await getPayload({ config: configPromise })
-  const { user } = await payload.auth({ headers })
 
   const slug = params?.slug
 
-  try {
-    const tenantsQuery = await payload.find({
-      collection: 'tenants',
-      overrideAccess: false,
-      user,
-      where: {
-        slug: {
-          equals: params.tenant,
-        },
-      },
-    })
-    // If no tenant is found, the user does not have access
-    // Show the login view
-    if (tenantsQuery.docs.length === 0) {
-      redirect(
-        `/tenant-slugs/${params.tenant}/login?redirect=${encodeURIComponent(
-          `/tenant-slugs/${params.tenant}${slug ? `/${slug.join('/')}` : ''}`,
-        )}`,
-      )
-    }
-  } catch (e) {
-    // If the query fails, it means the user did not have access to query on the slug field
-    // Show the login view
-    redirect(
-      `/tenant-slugs/${params.tenant}/login?redirect=${encodeURIComponent(
-        `/tenant-slugs/${params.tenant}${slug ? `/${slug.join('/')}` : ''}`,
-      )}`,
-    )
-  }
+  // Public frontend read: no auth gate or redirect
 
   const slugConstraint: Where = slug
     ? {
@@ -81,7 +50,6 @@ export default async function Page({
   const pageQuery = await payload.find({
     collection: 'pages',
     overrideAccess: false,
-    user,
     where: {
       and: [
         {

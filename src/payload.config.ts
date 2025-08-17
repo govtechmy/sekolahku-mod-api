@@ -6,6 +6,8 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Pages } from './collections/Pages'
+import { Articles } from './collections/Articles'
+import { SchoolIntros } from './collections/SchoolIntros'
 import { Tenants } from './collections/Tenants'
 import Users from './collections/Users'
 import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
@@ -22,14 +24,9 @@ export default buildConfig({
   admin: {
     user: 'users',
   },
-  collections: [Pages, Users, Tenants],
-  // db: mongooseAdapter({
-  //   url: process.env.DATABASE_URI as string,
-  // }),
-  db: postgresAdapter({
-    pool: {
-      connectionString: process.env.POSTGRES_URL,
-    },
+  collections: [Pages, Users, Tenants, Articles, SchoolIntros],
+  db: mongooseAdapter({
+    url: process.env.DATABASE_URI as string,
   }),
   onInit: async (args) => {
     if (process.env.SEED_DB) {
