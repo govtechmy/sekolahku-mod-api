@@ -1,0 +1,26 @@
+# VCS
+.git
+.gitignore
+
+# IDE/editor
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+
+# Dependencies & build artifacts
+node_modules
+dist
+build
+
+# Env & local config
+.env
+.env.*
+
+# Docker
+Dockerfile
+.dockerignore
+
+
