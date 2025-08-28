@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import mongoose from "mongoose";
 import { registerDocumentRoutes } from "./documents.routes";
 import { registerAuthRoutes } from "./auth.routes";
+import { registerSchoolRoutes } from "./schools.routes";
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   app.get("/health", { schema: { tags: ["System"], summary: "Healthcheck" } }, async () => {
@@ -11,6 +12,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
   await registerDocumentRoutes(app);
   await registerAuthRoutes(app);
+  await registerSchoolRoutes(app);
 }
 
 
