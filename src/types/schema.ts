@@ -1,4 +1,3 @@
-import type { Types } from "mongoose";
 import { z } from "zod";
 
 export const ROLES = ["admin", "editor", "viewer"] as const;
@@ -13,16 +12,7 @@ export interface UserEntity {
   password: string;
 }
 
-export interface DocumentEntity {
-  title: string;
-  content?: string;
-  tags?: string[];
-  type?: string;
-  isApproved?: boolean;
-  version?: string;
-  url?: string;
-  createdBy?: Types.ObjectId;
-}
+ 
 
 
 // School types
@@ -101,14 +91,6 @@ export interface SchoolEntity {
 }
 
 // Zod schemas for request validation
-export const createDocumentBodySchema = z.object({
-  title: z.string().min(1),
-  content: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  url: z.string().optional(),
-});
-
-export type CreateDocumentBody = z.infer<typeof createDocumentBodySchema>;
 
 export const loginBodySchema = z.object({
   username: z.string().min(1),
