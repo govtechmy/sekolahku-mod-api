@@ -4,12 +4,23 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@eslint/js": "^9.34.0",
     "@types/bcrypt": "^6.0.0",
     "@types/bun": "latest",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
     "bun-types": "^1.2.20",
-    "pino-pretty": "^11.2.2"
+    "eslint": "^9.34.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unicorn": "^60.0.0",
+    "globals": "^15.12.0",
+    "pino-pretty": "^11.2.2",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.42.0"
   },
   "peerDependencies": {
     "typescript": "^5.9.2"
@@ -17,7 +28,8 @@
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",
