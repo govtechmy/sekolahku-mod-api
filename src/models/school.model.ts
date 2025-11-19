@@ -1,13 +1,14 @@
-import { Schema, model } from "mongoose";
-import type { SchoolEntity } from "@/types/schema";
+import { model, Schema } from 'mongoose'
+
+import type { SchoolEntity } from '@/types/entities'
 
 const GeoPointSchema = new Schema(
   {
-    type: { type: String, enum: ["Point"], default: "Point" },
+    type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], required: true }, // [lng, lat]
   },
-  { _id: false }
-);
+  { _id: false },
+)
 
 const SchoolSchema = new Schema<SchoolEntity>(
   {
@@ -58,12 +59,10 @@ const SchoolSchema = new Schema<SchoolEntity>(
       ingestedAt: { type: Date },
     },
   },
-  { timestamps: true }
-);
+  { timestamps: true },
+)
 
-SchoolSchema.index({ code: 1 }, { unique: true });
-SchoolSchema.index({ geo: "2dsphere" });
+SchoolSchema.index({ code: 1 }, { unique: true })
+SchoolSchema.index({ geo: '2dsphere' })
 
-export const SchoolModel = model<SchoolEntity>("School", SchoolSchema);
-
-
+export const SchoolModel = model<SchoolEntity>('School', SchoolSchema)

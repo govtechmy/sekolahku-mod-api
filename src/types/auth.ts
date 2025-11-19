@@ -1,26 +1,15 @@
-import type { Role } from "./schema";
+import type { Role } from './enum'
 
 export interface JwtUserPayload {
-  userId: string;
-  idNumber: string;
-  role: Role;
-  iat?: number;
-  exp?: number;
+  userId: string
+  idNumber: string
+  role: Role
+  iat?: number
+  exp?: number
 }
 
 export interface AccessPayload {
-  userId: string;
-  idNumber: string;
-  role: Role;
+  userId: string
+  idNumber: string
+  role: Role
 }
-
-export interface LoginBody {
-  username: string;
-  password: string;
-}
-
-export interface RefreshBody {
-  refreshToken: string;
-}
-
-
