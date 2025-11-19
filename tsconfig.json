@@ -30,7 +30,9 @@
     "baseUrl": ".",
     "paths": {
       "@types/*": ["src/types/*"],
-      "@/types/*": ["src/types/*"]
+      "@/types/*": ["src/types/*"],
+      "@schemas": ["src/schemas/index.ts"],
+      "@/schemas": ["src/schemas/index.ts"]
     }
   }
 }
