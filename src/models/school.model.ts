@@ -1,68 +1,80 @@
 import { model, Schema } from 'mongoose'
 
-import type { SchoolEntity } from '@/types/entities'
+import type { EntitiSekolah } from '@/types/entities'
 
-const GeoPointSchema = new Schema(
+const GeoJSONPointSchema = new Schema(
   {
     type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true }, // [lng, lat]
+    coordinates: { type: [Number], required: true },
   },
   { _id: false },
 )
 
-const SchoolSchema = new Schema<SchoolEntity>(
+const InfoSekolahSchema = new Schema(
   {
-    code: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    level: { type: String },
-    typeLabel: { type: String },
-    admin: {
-      state: { type: String },
-      ppd: { type: String },
-      parliament: { type: String },
-      dun: { type: String },
-    },
-    mailingAddress: {
-      line: { type: String },
-      postcode: { type: String },
-      city: { type: String },
-      state: { type: String },
-    },
-    contacts: {
-      phones: [{ type: String }],
-      fax: [{ type: String }],
-      emails: [{ type: String }],
-    },
-    grade: { type: String },
-    assistance: { type: String },
-    sessions: {
-      count: { type: Number },
-      labels: [{ type: String }],
-    },
-    enrolment: {
-      preschool: { type: Number },
-      total: { type: Number },
-      specialNeeds: { type: Number },
-    },
-    staffing: {
-      teachers: { type: Number },
-    },
-    facilities: {
-      hasPreschool: { type: Boolean },
-      integration: { type: Boolean },
-    },
-    geo: { type: GeoPointSchema },
-    skmLe150: { type: Boolean },
-    meta: {
-      raw: { type: Schema.Types.Mixed },
-      sourceRowId: { type: String },
-      ingestedAt: { type: Date },
-    },
+    jenisLabel: { type: String },
+    jumlahPelajar: { type: Number, default: 0 },
+    jumlahGuru: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { _id: false },
 )
 
-SchoolSchema.index({ code: 1 }, { unique: true })
-SchoolSchema.index({ geo: '2dsphere' })
+const InfoKomunikasiSchema = new Schema(
+  {
+    noTelefon: { type: String },
+    noFax: { type: String },
+    email: { type: String },
+    alamatSurat: { type: String },
+    poskodSurat: { type: String },
+    bandarSurat: { type: String },
+  },
+  { _id: false },
+)
 
-export const SchoolModel = model<SchoolEntity>('School', SchoolSchema)
+const InfoPentadbiranSchema = new Schema(
+  {
+    negeri: { type: String },
+    ppd: { type: String },
+    parlimen: { type: String },
+    bantuan: { type: String },
+    bilSesi: { type: String },
+    sesi: { type: String },
+    prasekolah: { type: Boolean },
+    integrasi: { type: Boolean },
+  },
+  { _id: false },
+)
+
+const InfoLokasiSchema = new Schema(
+  {
+    koordinatXX: { type: Number },
+    koordinatYY: { type: Number },
+    location: { type: GeoJSONPointSchema },
+  },
+  { _id: false },
+)
+
+const EntitiSekolahDataSchema = new Schema(
+  {
+    infoSekolah: { type: InfoSekolahSchema, required: true },
+    infoKomunikasi: { type: InfoKomunikasiSchema, required: true },
+    infoPentadbiran: { type: InfoPentadbiranSchema, required: true },
+    infoLokasi: { type: InfoLokasiSchema, required: true },
+  },
+  { _id: false },
+)
+
+const EntitiSekolahSchema = new Schema<EntitiSekolah>(
+  {
+    namaSekolah: { type: String },
+    logoSekolah: { type: String },
+    kodSekolah: { type: String, required: true, unique: true },
+    data: { type: EntitiSekolahDataSchema, required: true },
+    updatedAt: { type: Date, default: () => new Date() },
+  },
+  { timestamps: false },
+)
+
+EntitiSekolahSchema.index({ 'data.infoLokasi.location': '2dsphere' })
+
+export const EntitiSekolahModel = model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema)
