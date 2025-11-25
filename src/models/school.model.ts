@@ -75,6 +75,6 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
   { timestamps: false },
 )
 
-EntitiSekolahSchema.index({ 'data.infoLokasi.location': '2dsphere' })
+EntitiSekolahSchema.index({ geo: '2dsphere' })
 
 export const EntitiSekolahModel = model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema)
