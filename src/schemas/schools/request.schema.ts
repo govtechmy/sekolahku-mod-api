@@ -46,7 +46,7 @@ const EntitiSekolahDataSchema = z.object({
 
 export const createSchoolBodySchema = z.object({
   namaSekolah: z.string().optional().nullable(),
-  logoSekolah: z.string().optional,
+  logoSekolah: z.string().optional(),
   kodSekolah: z.string().min(1),
   data: EntitiSekolahDataSchema,
   updatedAt: z.date().optional(),
