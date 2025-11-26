@@ -82,6 +82,8 @@ export interface EntitiSekolah {
   kodSekolah: string
   /** Nested school data */
   data: EntitiSekolahData
-  /** UTC timestamp when the document was last generated */
+  /** UTC timestamp when the document was last updated */
   updatedAt: Date
+   /** UTC timestamp when the document is First Time Created */
+  createdAt: Date 
 }

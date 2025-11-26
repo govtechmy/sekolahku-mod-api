@@ -71,6 +71,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
     updatedAt: { type: Date },
+    createdAt: {type : Date}
   },
   { timestamps: false },
 )

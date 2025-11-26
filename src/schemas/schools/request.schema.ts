@@ -50,6 +50,7 @@ export const createSchoolBodySchema = z.object({
   kodSekolah: z.string().min(1),
   data: EntitiSekolahDataSchema,
   updatedAt: z.date().optional(),
+  createdAt: z.date().optional(),
 })
 
 export type CreateSchoolBody = z.infer<typeof createSchoolBodySchema>
