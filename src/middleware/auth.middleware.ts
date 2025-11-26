@@ -1,7 +1,5 @@
+import type { JwtUserPayload, Role } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
-
-import type { JwtUserPayload } from '@/types/auth'
-import type { Role } from '@/types/enum'
 
 import { verifyAccessToken } from '../utils/jwt'
 

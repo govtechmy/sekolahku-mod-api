@@ -84,6 +84,36 @@ export interface EntitiSekolah {
   data: EntitiSekolahData
   /** UTC timestamp when the document was last updated */
   updatedAt: Date
-   /** UTC timestamp when the document is First Time Created */
-  createdAt: Date 
+  /** UTC timestamp when the document is First Time Created */
+  createdAt: Date
+}
+export interface AnalitikItem {
+  /** Category or type */
+  jenis: string
+  /** Percentage of total */
+  peratus: number
+  /** Total count for this category */
+  total: number
+}
+
+export interface AnalitikSekolahData {
+  /** Analytics by school type/label */
+  jenisLabel: AnalitikItem[]
+  /** Analytics by assistance type */
+  bantuan: AnalitikItem[]
+}
+
+export interface EntitiAnalitikSekolah {
+  /** Total number of schools processed */
+  jumlahSekolah: number
+  /** Total number of teachers */
+  jumlahGuru: number
+  /** Total number of students */
+  jumlahPelajar: number
+  /** Analytics data container */
+  data: AnalitikSekolahData
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+  /** UTC timestamp when the document was first created */
+  createdAt: Date
 }

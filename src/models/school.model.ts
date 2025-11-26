@@ -1,25 +1,25 @@
+import type { EntitiSekolah, EntitiSekolahData, InfoKomunikasi, InfoLokasi, InfoPentadbiran, InfoSekolah } from '@types'
+import { type GeoJSONPoint } from '@types'
 import { model, Schema } from 'mongoose'
 
-import type { EntitiSekolah } from '@/types/entities'
-
-const GeoJSONPointSchema = new Schema(
+const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {
-    type: { type: String },
+    type: 'Point',
     coordinates: { type: [Number], required: true },
   },
   { _id: false },
 )
 
-const InfoSekolahSchema = new Schema(
+const InfoSekolahSchema = new Schema<InfoSekolah>(
   {
     jenisLabel: { type: String },
-    jumlahPelajar: { type: Number},
-    jumlahGuru: { type: Number},
+    jumlahPelajar: { type: Number },
+    jumlahGuru: { type: Number },
   },
   { _id: false },
 )
 
-const InfoKomunikasiSchema = new Schema(
+const InfoKomunikasiSchema = new Schema<InfoKomunikasi>(
   {
     noTelefon: { type: String },
     noFax: { type: String },
@@ -31,7 +31,7 @@ const InfoKomunikasiSchema = new Schema(
   { _id: false },
 )
 
-const InfoPentadbiranSchema = new Schema(
+const InfoPentadbiranSchema = new Schema<InfoPentadbiran>(
   {
     negeri: { type: String },
     ppd: { type: String },
@@ -45,7 +45,7 @@ const InfoPentadbiranSchema = new Schema(
   { _id: false },
 )
 
-const InfoLokasiSchema = new Schema(
+const InfoLokasiSchema = new Schema<InfoLokasi>(
   {
     koordinatXX: { type: Number },
     koordinatYY: { type: Number },
@@ -54,7 +54,7 @@ const InfoLokasiSchema = new Schema(
   { _id: false },
 )
 
-const EntitiSekolahDataSchema = new Schema(
+const EntitiSekolahDataSchema = new Schema<EntitiSekolahData>(
   {
     infoSekolah: { type: InfoSekolahSchema, required: true },
     infoKomunikasi: { type: InfoKomunikasiSchema, required: true },
@@ -71,7 +71,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
     updatedAt: { type: Date },
-    createdAt: {type : Date}
+    createdAt: { type: Date },
   },
   { timestamps: false },
 )

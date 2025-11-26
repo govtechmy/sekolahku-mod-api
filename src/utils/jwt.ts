@@ -1,6 +1,5 @@
+import type { AccessPayload } from '@types'
 import jwt from 'jsonwebtoken'
-
-import type { AccessPayload } from '@/types/auth'
 
 import { env } from '../config/env.config'
 

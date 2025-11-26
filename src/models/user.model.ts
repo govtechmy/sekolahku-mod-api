@@ -1,7 +1,5 @@
+import { ROLES, type UserEntity } from '@types'
 import { model, Schema } from 'mongoose'
-
-import type { UserEntity } from '@/types/entities'
-import { ROLES } from '@/types/enum'
 
 const UserSchema = new Schema<UserEntity>(
   {

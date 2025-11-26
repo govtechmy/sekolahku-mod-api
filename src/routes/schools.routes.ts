@@ -20,7 +20,6 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
     listSchools,
   )
 
-
   app.get<{ Params: { id: string } }>(
     '/schools/:id',
     {
