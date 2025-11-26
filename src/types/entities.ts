@@ -9,76 +9,81 @@ export interface UserEntity {
   password: string
 }
 
-export interface SchoolAdminInfo {
-  state?: string
-  ppd?: string
-  parliament?: string
-  dun?: string
-}
-
-export interface MailingAddress {
-  line?: string
-  postcode?: string
-  city?: string
-  state?: string
-}
-
-export interface SchoolContacts {
-  phones?: string[]
-  fax?: string[]
-  emails?: string[]
-}
-
-export interface SchoolSessions {
-  count?: number
-  labels?: string[]
-}
-
-export interface SchoolEnrolment {
-  preschool?: number
-  total?: number
-  specialNeeds?: number
-}
-
-export interface SchoolStaffing {
-  teachers?: number
-}
-
-export interface SchoolFacilities {
-  hasPreschool?: boolean
-  integration?: boolean
-}
-
-export interface GeoPoint {
+export interface GeoJSONPoint {
   type: 'Point'
   coordinates: [number, number]
 }
 
-export interface SchoolMetaRaw {
-  [key: string]: unknown
+export interface InfoSekolah {
+  /** Type of school label e.g SK, SMK, SMKA, etc. */
+  jenisLabel?: string | null
+  /** Total students (enrolmenPrasekolah + enrolmen + enrolmenKhas) */
+  jumlahPelajar?: number
+  /** Total number of teachers */
+  jumlahGuru?: number
 }
 
-export interface SchoolMeta {
-  raw?: SchoolMetaRaw
-  sourceRowId?: string
-  ingestedAt?: Date
+export interface InfoKomunikasi {
+  /** Primary contact number */
+  noTelefon?: string | null
+  /** Fax number */
+  noFax?: string | null
+  /** General contact email */
+  email?: string | null
+  /** Mailing address */
+  alamatSurat?: string | null
+  /** Mailing postcode */
+  poskodSurat?: string | null
+  /** Mailing city */
+  bandarSurat?: string | null
 }
 
-export interface SchoolEntity {
-  code: string
-  name: string
-  level?: string
-  typeLabel?: string
-  admin?: SchoolAdminInfo
-  mailingAddress?: MailingAddress
-  contacts?: SchoolContacts
-  grade?: string
-  assistance?: string
-  sessions?: SchoolSessions
-  enrolment?: SchoolEnrolment
-  staffing?: SchoolStaffing
-  facilities?: SchoolFacilities
-  geo?: GeoPoint
-  skmLe150?: boolean
-  meta?: SchoolMeta
+export interface InfoPentadbiran {
+  /** State the school is located in */
+  negeri?: string | null
+  /** Pejabat Pendidikan Daerah (district office) */
+  ppd?: string | null
+  /** Parliament constituency */
+  parlimen?: string | null
+  /** Bantuan classification */
+  bantuan?: string | null
+  /** Number of school sessions */
+  bilSesi?: string | null
+  /** School session */
+  sesi?: string | null
+  /** Has preschool programme */
+  prasekolah?: boolean | null
+  /** Runs integration programme */
+  integrasi?: boolean | null
+}
+
+export interface InfoLokasi {
+  /** Longitude value */
+  koordinatXX?: number | null
+  /** Latitude value */
+  koordinatYY?: number | null
+  /** GeoJSON point for geospatial queries */
+  location?: GeoJSONPoint | null
+}
+
+export interface EntitiSekolahData {
+  infoSekolah: InfoSekolah
+  infoKomunikasi: InfoKomunikasi
+  infoPentadbiran: InfoPentadbiran
+  infoLokasi: InfoLokasi
+}
+
+export interface EntitiSekolah {
+  /** Name of the school */
+  namaSekolah?: string | null
+  /** S3 link for Logo */
+  logoSekolah?: string
+  /** Unique school code identifier */
+  kodSekolah: string
+  /** Nested school data */
+  data: EntitiSekolahData
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+   /** UTC timestamp when the document is First Time Created */
+  createdAt: Date 
 }

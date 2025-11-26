@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 
-import { authHeaderSchema, type CreateSchoolBody, createSchoolBodySchema } from '@/schemas'
+import { authHeaderSchema } from '@/schemas'
 
-import { createSchool, getSchoolById, listSchools } from '../controllers/schools.controller'
+import { getSchoolById, listSchools } from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> {
@@ -20,20 +20,6 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
     listSchools,
   )
 
-  app.post<{ Body: CreateSchoolBody }>(
-    '/schools',
-    {
-      preHandler: [authMiddleware],
-      schema: {
-        headers: authHeaderSchema,
-        body: createSchoolBodySchema,
-        tags: ['Schools'],
-        summary: 'Create a school',
-        security: [{ bearerAuth: [] }],
-      },
-    },
-    createSchool,
-  )
 
   app.get<{ Params: { id: string } }>(
     '/schools/:id',
