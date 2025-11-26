@@ -70,7 +70,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     logoSekolah: { type: String },
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
-    updatedAt: { type: Date, default: () => new Date() },
+    updatedAt: { type: Date },
   },
   { timestamps: false },
 )

@@ -6,35 +6,35 @@ const GeoJSONPointSchema = z.object({
 })
 
 const InfoSekolahSchema = z.object({
-  jenisLabel: z.string().optional().nullable(),
+  jenisLabel: z.string().optional(),
   jumlahPelajar: z.number().int().optional(),
   jumlahGuru: z.number().int().optional(),
 })
 
 const InfoKomunikasiSchema = z.object({
-  noTelefon: z.string().optional().nullable(),
-  noFax: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
-  alamatSurat: z.string().optional().nullable(),
-  poskodSurat: z.string().optional().nullable(),
-  bandarSurat: z.string().optional().nullable(),
+  noTelefon: z.string().optional(),
+  noFax: z.string().optional(),
+  email: z.string().email().optional(),
+  alamatSurat: z.string().optional(),
+  poskodSurat: z.string().optional(),
+  bandarSurat: z.string().optional(),
 })
 
 const InfoPentadbiranSchema = z.object({
-  negeri: z.string().optional().nullable(),
-  ppd: z.string().optional().nullable(),
-  parlimen: z.string().optional().nullable(),
-  bantuan: z.string().optional().nullable(),
-  bilSesi: z.string().optional().nullable(),
-  sesi: z.string().optional().nullable(),
-  prasekolah: z.boolean().optional().nullable(),
-  integrasi: z.boolean().optional().nullable(),
+  negeri: z.string().optional(),
+  ppd: z.string().optional(),
+  parlimen: z.string().optional(),
+  bantuan: z.string().optional(),
+  bilSesi: z.string().optional(),
+  sesi: z.string().optional(),
+  prasekolah: z.boolean().optional(),
+  integrasi: z.boolean().optional(),
 })
 
 const InfoLokasiSchema = z.object({
-  koordinatXX: z.number().optional().nullable(),
-  koordinatYY: z.number().optional().nullable(),
-  location: GeoJSONPointSchema.optional().nullable(),
+  koordinatXX: z.number().optional(),
+  koordinatYY: z.number().optional(),
+  location: GeoJSONPointSchema.optional(),
 })
 
 const EntitiSekolahDataSchema = z.object({
@@ -45,7 +45,7 @@ const EntitiSekolahDataSchema = z.object({
 })
 
 export const createSchoolBodySchema = z.object({
-  namaSekolah: z.string().optional().nullable(),
+  namaSekolah: z.string().optional(),
   logoSekolah: z.string().optional(),
   kodSekolah: z.string().min(1),
   data: EntitiSekolahDataSchema,
