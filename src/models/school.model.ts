@@ -4,7 +4,7 @@ import type { EntitiSekolah } from '@/types/entities'
 
 const GeoJSONPointSchema = new Schema(
   {
-    type: { type: String, enum: ['Point'], default: 'Point' },
+    type: { type: String, enum: ['Point'] },
     coordinates: { type: [Number], required: true },
   },
   { _id: false },
@@ -13,8 +13,8 @@ const GeoJSONPointSchema = new Schema(
 const InfoSekolahSchema = new Schema(
   {
     jenisLabel: { type: String },
-    jumlahPelajar: { type: Number, default: 0 },
-    jumlahGuru: { type: Number, default: 0 },
+    jumlahPelajar: { type: Number},
+    jumlahGuru: { type: Number},
   },
   { _id: false },
 )
