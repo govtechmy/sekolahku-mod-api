@@ -1,9 +1,8 @@
+import type { AccessPayload, Role } from '@types'
 import bcrypt from 'bcrypt'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 
 import type { LoginBody, RefreshBody } from '@/schemas'
-import type { AccessPayload } from '@/types/auth'
-import type { Role } from '@/types/enum'
 
 import { UserModel } from '../models/user.model'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt'

@@ -1,6 +1,5 @@
+import type { JwtUserPayload } from '@types'
 import type { FastifyInstance } from 'fastify'
-
-import type { JwtUserPayload } from '@/types/auth'
 
 // Centralized Fastify decorators and their typings
 declare module 'fastify' {
