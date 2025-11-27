@@ -4,7 +4,7 @@ import { model, Schema } from 'mongoose'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {
-    type: 'Point',
+    type: { Point: Number },
     coordinates: { type: [Number], required: true },
   },
   { _id: false },
