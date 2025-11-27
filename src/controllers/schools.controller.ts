@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
 
 import type { CreateSchoolBody } from '@/schemas'
 
@@ -27,3 +28,33 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
   req.log.info({ id }, 'schools:get:success')
   reply.send(doc)
 }
+
+// the function is to list all schools within the radius
+export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
+  const { latitude, longitude, radiusInMeter } = req.query
+  const foundSchools = await EntitiSekolahModel.find({
+    'data.infoLokasi.location': {
+      $nearSphere: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+        $maxDistance: radiusInMeter,
+      },
+    },
+  }).lean()
+  const data = foundSchools.map(school => ({
+    kodSekolah: school.kodSekolah,
+    location: school.data.infoLokasi.location,
+  }))
+  reply.send(data)
+}
+
+// give mongodb central point = current location
+// 2nd params is find nearest school within the cental point radius
+// get a list of the school within the radius
+
+//todo: create a controller
+// get info from the user -- radius and coordinate of location
+// use this coordinate and find the radius of the available school in the radius using mongodb
+// return the list of available school based on the nearest radius [[school code , coordinate]],

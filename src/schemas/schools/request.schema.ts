@@ -52,5 +52,12 @@ export const createSchoolBodySchema = z.object({
   updatedAt: z.date().optional(),
   createdAt: z.date().optional(),
 })
-
 export type CreateSchoolBody = z.infer<typeof createSchoolBodySchema>
+
+export const getNearbySchoolByLocationSchema = z.object({
+  radiusInMeter: z.number(),
+  latitude: z.number(),
+  longitude: z.number(),
+})
+
+export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>

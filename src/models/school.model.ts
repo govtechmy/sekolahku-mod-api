@@ -78,4 +78,4 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
 
 EntitiSekolahSchema.index({ geo: '2dsphere' })
 
-export const EntitiSekolahModel = model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema)
+export const EntitiSekolahModel = model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema, 'EntitiSekolah')
