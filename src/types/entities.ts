@@ -10,7 +10,7 @@ export interface UserEntity {
 }
 
 export interface GeoJSONPoint {
-  type: 'Point'
+  type: number
   coordinates: [number, number]
 }
 
