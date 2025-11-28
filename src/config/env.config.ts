@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { SecretsManagerService } from '../services/secrets-manager.svc'
+import { NEGERI } from '../types/enum'
 import { parseWithSchemaOrThrow } from '../utils/env-parse.util'
 
 const EnvSchema = z.object({
@@ -11,6 +12,7 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(1),
   REFRESH_TOKEN_SECRET: z.string().min(1),
   FRONTEND_ORIGIN: z.string().url().optional(),
+  ALLOWED_NEGERI: z.array(z.enum(NEGERI)).optional(),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -22,6 +24,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     JWT_SECRET: secrets.JWT_SECRET,
     REFRESH_TOKEN_SECRET: secrets.REFRESH_TOKEN_SECRET,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
+    ALLOWED_NEGERI: secrets.ALLOWED_NEGERI,
   }
 }
 
