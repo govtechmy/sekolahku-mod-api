@@ -1,1 +1,8 @@
-export { type CreateSchoolBody, createSchoolBodySchema } from './request.schema'
+export {
+  type CreateSchoolBody,
+  createSchoolBodySchema,
+  type GetNearbySchoolByLocation,
+  getNearbySchoolByLocationSchema,
+  type ListSchoolsSearchQuery,
+  listSchoolsSearchQuerySchema,
+} from './request.schema'

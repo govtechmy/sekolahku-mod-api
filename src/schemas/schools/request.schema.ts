@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { NEGERI } from '../../types/enum'
+
 const GeoJSONPointSchema = z.object({
   type: z.literal('Point'),
   coordinates: z.tuple([z.number(), z.number()]),
@@ -21,7 +23,7 @@ const InfoKomunikasiSchema = z.object({
 })
 
 const InfoPentadbiranSchema = z.object({
-  negeri: z.string().optional(),
+  negeri: z.enum(NEGERI).optional(),
   ppd: z.string().optional(),
   parlimen: z.string().optional(),
   bantuan: z.string().optional(),
@@ -55,7 +57,7 @@ export const createSchoolBodySchema = z.object({
 
 export const listSchoolsSearchQuerySchema = z.object({
   namaSekolah: z.string().optional(),
-  negeri: z.string().optional(),
+  negeri: z.enum(NEGERI).optional(),
   jenis: z.string().optional(),
 })
 
