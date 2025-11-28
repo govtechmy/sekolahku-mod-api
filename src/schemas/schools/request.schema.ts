@@ -53,4 +53,12 @@ export const createSchoolBodySchema = z.object({
   createdAt: z.date().optional(),
 })
 
+export const listSchoolsSearchQuerySchema = z.object({
+  namaSekolah: z.string().optional(),
+  negeri: z.string().optional(),
+  jenis: z.string().optional(),
+})
+
+export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
+
 export type CreateSchoolBody = z.infer<typeof createSchoolBodySchema>
