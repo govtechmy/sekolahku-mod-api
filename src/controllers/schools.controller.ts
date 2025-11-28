@@ -81,7 +81,7 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
 
     const data = foundSchools.map(school => ({
       kodSekolah: school.kodSekolah,
-      location: school.data.infoLokasi.location,
+      location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
     }))
 
     reply.send(data)
