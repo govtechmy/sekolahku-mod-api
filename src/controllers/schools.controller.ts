@@ -32,7 +32,6 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 
 // the function is to list all schools within the radius
 export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
-  
   //validation
   const latitudeParam = getSingleQueryParam(req, 'latitude')
   if (latitudeParam.error) return reply.code(latitudeParam.error.status).send({ message: latitudeParam.error.message })
@@ -86,7 +85,6 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
     }))
 
     reply.send(data)
-
   } catch (error) {
     req.log.error({ err: error }, 'schools:getNearby:error')
     reply.code(500).send({ message: 'Failed to fetch nearby schools. Please check your coordinates and try again.' })
