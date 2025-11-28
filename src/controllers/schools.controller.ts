@@ -96,7 +96,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest, reply: Fas
   const { namaSekolah, negeri, jenis } = req.query as ListSchoolsSearchQuery
   const schools = await EntitiSekolahModel.find({
     ...(namaSekolah ? { namaSekolah: { $regex: namaSekolah, $options: 'i' } } : {}),
-    ...(negeri ? { 'data.infoPentadbiran.negeri': { $regex: negeri, $options: 'i' } } : {}),
+    ...(negeri ? { 'data.infoPentadbiran.negeri': negeri } : {}),
     ...(jenis ? { 'data.infoSekolah.jenisLabel': { $regex: jenis, $options: 'i' } } : {}),
   }).lean()
   // if (!schools || schools.length === 0) {
