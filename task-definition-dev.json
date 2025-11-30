@@ -11,13 +11,13 @@
           }
         },
         "name": "sekolahku-mod-api",
-        "portMappings": [{ "containerPort": 3000, "hostPort": 3000, "name": "sekolahku-mod-api-dev" }],
+        "portMappings": [{ "containerPort": 3000, "hostPort": 3000, "name": "sekolahku-mod-api" }],
         "stopTimeout": 2
       }
     ],
     "cpu": "512",
-    "executionRoleArn": "arn:aws:iam::602670427499:role/ecsTaskExecutionRole-dev",
-    "family": "sekolahku-mod-api-service-dev",
+    "executionRoleArn": "arn:aws:iam::602670427499:role/sekolahku-ecsTaskExecutionRole-dev",
+    "family": "sekolahku-mod-api-dev",
     "memory": "1024",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
