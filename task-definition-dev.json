@@ -17,7 +17,7 @@
     ],
     "cpu": "512",
     "executionRoleArn": "arn:aws:iam::602670427499:role/ecsTaskExecutionRole-dev",
-    "family": "sekolahku-mod-api-dev",
+    "family": "sekolahku-mod-api-service-dev",
     "memory": "1024",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
