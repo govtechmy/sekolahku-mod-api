@@ -1,0 +1,26 @@
+{
+    "containerDefinitions": [
+      {
+        "image": "602670427499.dkr.ecr.ap-southeast-5.amazonaws.com/sekolahku-mod-api-dev:latest",
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/sekolahku-mod-api-dev",
+            "awslogs-region": "ap-southeast-5",
+            "awslogs-stream-prefix": "ecs"
+          }
+        },
+        "name": "sekolahku-mod-api",
+        "portMappings": [{ "containerPort": 3000, "hostPort": 3000, "name": "sekolahku-mod-api" }],
+        "stopTimeout": 2
+      }
+    ],
+    "cpu": "512",
+    "executionRoleArn": "arn:aws:iam::602670427499:role/sekolahku-ecsTaskExecutionRole-dev",
+    "family": "sekolahku-mod-api-dev",
+    "memory": "1024",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "taskRoleArn": "arn:aws:iam::602670427499:role/sekolahku-ecs-task-role-dev"
+  }
+  
