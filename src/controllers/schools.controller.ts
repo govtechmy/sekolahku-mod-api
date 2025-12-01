@@ -3,7 +3,7 @@ import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.sche
 
 import type { CreateSchoolBody } from '@/schemas'
 
-import { EntitiSekolahModel } from '../models/school.model'
+import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
 import { getSingleQueryParam, parseNumberParam, validateLatitudeRange, validateLongitudeRange } from '../utils/validation.util'
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -21,12 +21,12 @@ export async function createSchool(req: FastifyRequest<{ Body: CreateSchoolBody 
 
 export async function getSchoolById(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const { id } = req.params
-  const doc = await EntitiSekolahModel.findById(id).lean()
+  const doc = await SekolahModel.findById(id).lean()
   if (!doc) {
     req.log.warn({ id }, 'schools:get:not-found')
     return reply.code(404).send({ message: 'School not found' })
   }
-  req.log.info({ id }, 'schools:get:success')
+  req.log.info({ id, kodSekolah: doc.kodSekolah }, 'schools:get:success')
   reply.send(doc)
 }
 
