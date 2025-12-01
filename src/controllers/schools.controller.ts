@@ -25,7 +25,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
     req.log.warn({ id }, 'schools:get:not-found')
     return reply.code(404).send(createErrorResponse('School not found', 'ERR_404', 404))
   }
-   return reply.send(createSuccessResponse(doc))
+  return reply.send(createSuccessResponse(doc))
 }
 
 // the function is to list all schools within the radius
@@ -57,11 +57,10 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
     }))
 
     return reply.send(createSuccessResponse(data))
-
   } catch (error) {
     req.log.error({ err: error }, 'schools:getNearby:error')
     const errResponse = createErrorResponse('Failed to fetch nearby schools. Please check your coordinates and try again.', 'ERR_500', 500)
-    
+
     return reply.code(500).send(errResponse)
   }
 }
