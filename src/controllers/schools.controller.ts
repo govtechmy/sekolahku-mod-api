@@ -92,17 +92,17 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
   }
 }
 
-export async function getSchoolsSearchSuggestion(req: FastifyRequest, reply: FastifyReply) {
-  const { namaSekolah, negeri, jenis } = req.query as ListSchoolsSearchQuery
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
+  const { namaSekolah, negeri, jenis } = req.query
   const schools = await EntitiSekolahModel.find({
-    ...(namaSekolah ? { namaSekolah: { $regex: namaSekolah, $options: 'i' } } : {}),
+    ...(namaSekolah ? { namaSekolah: { $regex: escapeRegExp(namaSekolah), $options: 'i' } } : {}),
     ...(negeri ? { 'data.infoPentadbiran.negeri': negeri } : {}),
-    ...(jenis ? { 'data.infoSekolah.jenisLabel': { $regex: jenis, $options: 'i' } } : {}),
+    ...(jenis ? { 'data.infoSekolah.jenisLabel': { $regex: escapeRegExp(jenis), $options: 'i' } } : {}),
   }).lean()
-  // if (!schools || schools.length === 0) {
-  //   req.log.warn({ schools }, 'schools:get:not-found')
-  //   return reply.code(404).send({ message: 'School not found' })
-  // }
   req.log.info(
     {
       count: Array.isArray(schools) ? schools.length : undefined,
