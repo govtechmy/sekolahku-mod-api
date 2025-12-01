@@ -11,6 +11,16 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(1),
   REFRESH_TOKEN_SECRET: z.string().min(1),
   FRONTEND_ORIGIN: z.string().url().optional(),
+  MULTIPLE_ORIGINS: z
+    .string()
+    .optional()
+    .transform(val => {
+      if (!val) return [] as string[]
+      return val
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+    }),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -22,6 +32,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     JWT_SECRET: secrets.JWT_SECRET,
     REFRESH_TOKEN_SECRET: secrets.REFRESH_TOKEN_SECRET,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
+    MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
   }
 }
 
@@ -47,7 +58,7 @@ async function resolveEnv() {
   }
 
   const isProduction = parsed.APP_ENV === 'production'
-  if (isProduction && (!Array.isArray(parsed.FRONTEND_ORIGIN) || parsed.FRONTEND_ORIGIN.length === 0)) {
+  if (isProduction && (!Array.isArray(parsed.MULTIPLE_ORIGINS) || parsed.MULTIPLE_ORIGINS.length === 0)) {
     throw new Error('MULTIPLE_ORIGINS is required in production environment')
   }
 

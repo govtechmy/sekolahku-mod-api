@@ -66,7 +66,6 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
   }
 }
 
-// Utility function to escape special characters in regex
 function escapeStringRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

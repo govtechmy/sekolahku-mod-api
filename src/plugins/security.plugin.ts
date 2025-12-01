@@ -4,11 +4,11 @@ import type { FastifyInstance } from 'fastify'
 
 import { env } from '../config/env.config'
 
-export async function registerSecurityPlugins(app: FastifyInstance, isProduction: boolean): Promise<void> {
+export async function registerSecurityPlugins(app: FastifyInstance, isProduction: boolean) {
   if (isProduction) {
-    await app.register(fastifyCors, { origin: env.FRONTEND_ORIGIN! })
+    await app.register(fastifyCors, { origin: env.MULTIPLE_ORIGINS, methods: '*' })
   } else {
-    await app.register(fastifyCors, { origin: true })
+    await app.register(fastifyCors, { origin: true, methods: '*' })
   }
-  await app.register(fastifyHelmet)
+  await app.register(fastifyHelmet, { contentSecurityPolicy: false })
 }
