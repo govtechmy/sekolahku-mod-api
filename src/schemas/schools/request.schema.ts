@@ -66,9 +66,10 @@ export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema
 export type CreateSchoolBody = z.infer<typeof createSchoolBodySchema>
 
 export const getNearbySchoolByLocationSchema = z.object({
-  radiusInMeter: z.number(),
-  latitude: z.number(),
-  longitude: z.number(),
+  // Coerce querystring values (strings) into numbers
+  radiusInMeter: z.coerce.number().positive(),
+  latitude: z.coerce.number().refine(v => v >= -90 && v <= 90),
+  longitude: z.coerce.number().refine(v => v >= -180 && v <= 180),
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>

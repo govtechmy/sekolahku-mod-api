@@ -1,4 +1,4 @@
-import type { Role } from './enum'
+import type { RESPONSE_STATUS, Role } from './enum'
 
 export interface UserEntity {
   name: string
@@ -116,4 +116,83 @@ export interface EntitiAnalitikSekolah {
   updatedAt: Date
   /** UTC timestamp when the document was first created */
   createdAt: Date
+}
+
+export interface Sekolah {
+  /** State the school is located in */
+  negeri?: string | null
+  /** Pejabat Pendidikan Daerah (district office) */
+  ppd?: string | null
+  /** Parliament constituency */
+  parlimen?: string | null
+  /** State assembly constituency */
+  dun?: string | null
+  /** School level (e.g., "Rendah", "Menengah") */
+  peringkat?: string | null
+  /** Type of school label (e.g., "SK", "SMK", "SMKA") */
+  jenisLabel?: string | null
+  /** Unique school code identifier */
+  kodSekolah: string
+  /** Name of the school */
+  namaSekolah?: string | null
+  /** Mailing address */
+  alamatSurat?: string | null
+  /** Mailing postcode */
+  poskodSurat?: number | null
+  /** Mailing city */
+  bandarSurat?: string | null
+  /** Primary contact number */
+  noTelefon?: string | null
+  /** Fax number */
+  noFax?: string | null
+  /** General contact email */
+  email?: string | null
+  /** Location type (e.g., "Bandar", "Luar Bandar") */
+  lokasi?: string | null
+  /** School grade (e.g., "A", "B", "C") */
+  gred?: string | null
+  /** Bantuan classification */
+  bantuan?: string | null
+  /** Number of school sessions */
+  bilSesi?: string | null
+  /** School session */
+  sesi?: string | null
+  /** Preschool enrollment count */
+  enrolmenPrasekolah?: number | null
+  /** General enrollment count */
+  enrolmen?: number | null
+  /** Special needs enrollment count */
+  enrolmenKhas?: number | null
+  /** Total number of teachers */
+  guru?: number | null
+  /** Has preschool programme */
+  prasekolah?: boolean | null
+  /** Runs integration programme */
+  integrasi?: boolean | null
+  /** Longitude coordinate */
+  koordinatXX?: number | null
+  /** Latitude coordinate */
+  koordinatYY?: number | null
+  /** SKM LEQ 150 status */
+  skmLEQ150?: boolean | null
+  /** GeoJSON point for geospatial queries */
+  location?: GeoJSONPoint | null
+  /** UTC timestamp when the document was last updated */
+  updatedAt?: Date
+}
+export interface ResponseModel {
+  status: RESPONSE_STATUS
+  statusCode: number
+  data: unknown | ResponseListModel
+  error?: {
+    code: string
+    message: string
+    details?: Record<string, unknown>
+  }
+}
+
+export interface ResponseListModel {
+  items: unknown[]
+  pageNumber: number
+  pageSize: number
 }

@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
+import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import { getNearbySchoolByLocationSchema } from 'src/schemas/schools/request.schema'
 
-import { authHeaderSchema, type GetNearbySchoolByLocation, type ListSchoolsSearchQuery } from '@/schemas'
+import { authHeaderSchema, type ListSchoolsSearchQuery } from '@/schemas'
 import { listSchoolsSearchQuerySchema } from '@/schemas'
 
 import { getNearbySchools, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
@@ -56,6 +58,7 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
       preHandler: authMiddleware,
       schema: {
         headers: authHeaderSchema,
+        querystring: getNearbySchoolByLocationSchema,
         tags: ['Schools'],
         summary: 'Get nearby schools by location and radius',
       },
