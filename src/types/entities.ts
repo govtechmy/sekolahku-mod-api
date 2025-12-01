@@ -1,4 +1,4 @@
-import type { Role } from './enum'
+import type { RESPONSE_STATUS, Role } from './enum'
 
 export interface UserEntity {
   name: string
@@ -116,4 +116,20 @@ export interface EntitiAnalitikSekolah {
   updatedAt: Date
   /** UTC timestamp when the document was first created */
   createdAt: Date
+}
+export interface ResponseModel {
+  status: RESPONSE_STATUS
+  statusCode: number
+  data: unknown | ResponseListModel
+  error?: {
+    code: string
+    message: string
+    details?: Record<string, unknown>
+  }
+}
+
+export interface ResponseListModel {
+  items: unknown[]
+  pageNumber: number
+  pageSize: number
 }

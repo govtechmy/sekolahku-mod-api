@@ -1,22 +1,21 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
 
 import { EntitiSekolahModel } from '../models/school.model'
-import { getSingleQueryParam, parseNumberParam, validateLatitudeRange, validateLongitudeRange } from '../utils/validation.util'
+// Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
   const schools = await EntitiSekolahModel.find().lean()
-  req.log.info({ count: Array.isArray(schools) ? schools.length : undefined }, 'schools:list')
-  reply.send(schools)
+  return reply.send(createSuccessResponse(schools))
 }
 
 export async function createSchool(req: FastifyRequest<{ Body: CreateSchoolBody }>, reply: FastifyReply) {
   const payload = req.body
   const created = await EntitiSekolahModel.create(payload)
-  req.log.info({ kodSekolah: created.kodSekolah, id: created._id }, 'schools:create:success')
-  reply.code(201).send(created)
+  return reply.code(201).send(createSuccessResponse(created, 201))
 }
 
 export async function getSchoolById(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
@@ -24,41 +23,15 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
   const doc = await EntitiSekolahModel.findById(id).lean()
   if (!doc) {
     req.log.warn({ id }, 'schools:get:not-found')
-    return reply.code(404).send({ message: 'School not found' })
+    return reply.code(404).send(createErrorResponse('School not found', 'ERR_404', 404))
   }
-  req.log.info({ id }, 'schools:get:success')
-  reply.send(doc)
+   return reply.send(createSuccessResponse(doc))
 }
 
 // the function is to list all schools within the radius
 export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
-  //validation
-  const latitudeParam = getSingleQueryParam(req, 'latitude')
-  if (latitudeParam.error) return reply.code(latitudeParam.error.status).send({ message: latitudeParam.error.message })
-  const longitudeParam = getSingleQueryParam(req, 'longitude')
-  if (longitudeParam.error) return reply.code(longitudeParam.error.status).send({ message: longitudeParam.error.message })
-  const radiusInMeterParam = getSingleQueryParam(req, 'radiusInMeter')
-  if (radiusInMeterParam.error) return reply.code(radiusInMeterParam.error.status).send({ message: radiusInMeterParam.error.message })
-
-  const latitudeParsed = parseNumberParam(req, 'latitude', latitudeParam.value)
-  if (latitudeParsed.error) return reply.code(latitudeParsed.error.status).send({ message: latitudeParsed.error.message })
-  const longitudeParsed = parseNumberParam(req, 'longitude', longitudeParam.value)
-  if (longitudeParsed.error) return reply.code(longitudeParsed.error.status).send({ message: longitudeParsed.error.message })
-  const radiusInMeterParsed = parseNumberParam(req, 'radiusInMeter', radiusInMeterParam.value)
-  if (radiusInMeterParsed.error) return reply.code(radiusInMeterParsed.error.status).send({ message: radiusInMeterParsed.error.message })
-
-  const longitude = longitudeParsed.value
-  const latitude = latitudeParsed.value
-  const radiusInMeter = radiusInMeterParsed.value
-
-  const longitudeRange = validateLongitudeRange(req, longitude)
-  if ('error' in longitudeRange) {
-    return reply.code(longitudeRange.error.status).send({ message: longitudeRange.error.message })
-  }
-  const latitudeRange = validateLatitudeRange(req, latitude)
-  if ('error' in latitudeRange) {
-    return reply.code(latitudeRange.error.status).send({ message: latitudeRange.error.message })
-  }
+  // All query validation handled by Zod via route schema
+  const { latitude, longitude, radiusInMeter } = req.query
 
   //Querying to find school in db
   try {
@@ -75,8 +48,7 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
     }).lean()
 
     if (!Array.isArray(foundSchools) || foundSchools.length === 0) {
-      req.log.info({ latitude, longitude, radiusInMeter }, 'schools:nearby:no-results')
-      return reply.code(200).send({ message: 'No schools found within the specified radius.', data: [] })
+      return reply.send(createSuccessResponse([]))
     }
 
     const data = foundSchools.map(school => ({
@@ -84,9 +56,12 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
       location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
     }))
 
-    reply.send(data)
+    return reply.send(createSuccessResponse(data))
+
   } catch (error) {
     req.log.error({ err: error }, 'schools:getNearby:error')
-    reply.code(500).send({ message: 'Failed to fetch nearby schools. Please check your coordinates and try again.' })
+    const errResponse = createErrorResponse('Failed to fetch nearby schools. Please check your coordinates and try again.', 'ERR_500', 500)
+    
+    return reply.code(500).send(errResponse)
   }
 }
