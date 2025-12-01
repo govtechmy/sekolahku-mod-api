@@ -57,7 +57,7 @@ export const createSchoolBodySchema = z.object({
 
 export const listSchoolsSearchQuerySchema = z.object({
   namaSekolah: z.string().optional(),
-  negeri: z.enum(NEGERI).optional(),
+  negeri: z.enum([...NEGERI, 'ALL']).optional(),
   jenis: z.string().optional(),
 })
 

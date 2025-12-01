@@ -100,8 +100,8 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   const { namaSekolah, negeri, jenis } = req.query
   const schools = await EntitiSekolahModel.find({
     ...(namaSekolah ? { namaSekolah: { $regex: escapeRegExp(namaSekolah), $options: 'i' } } : {}),
-    ...(negeri ? { 'data.infoPentadbiran.negeri': negeri } : {}),
-    ...(jenis ? { 'data.infoSekolah.jenisLabel': { $regex: escapeRegExp(jenis), $options: 'i' } } : {}),
+    ...(negeri && negeri !== 'ALL' ? { 'data.infoPentadbiran.negeri': negeri } : {}),
+    ...(jenis && jenis !== 'ALL' ? { 'data.infoSekolah.jenisLabel': { $regex: escapeRegExp(jenis), $options: 'i' } } : {}),
   }).lean()
   req.log.info(
     {
