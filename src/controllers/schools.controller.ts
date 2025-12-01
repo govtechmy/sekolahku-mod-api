@@ -66,17 +66,28 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
   }
 }
 
-function escapeRegExp(str: string): string {
+// Utility function to escape special characters in regex
+function escapeStringRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
   const { namaSekolah, negeri, jenis } = req.query
-  const schools = await EntitiSekolahModel.find({
-    ...(namaSekolah ? { namaSekolah: { $regex: escapeRegExp(namaSekolah), $options: 'i' } } : {}),
-    ...(negeri && negeri !== 'ALL' ? { 'data.infoPentadbiran.negeri': negeri } : {}),
-    ...(jenis && jenis !== 'ALL' ? { 'data.infoSekolah.jenisLabel': { $regex: escapeRegExp(jenis), $options: 'i' } } : {}),
-  }).lean()
+  const query = {}
+
+  if (namaSekolah) {
+    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(namaSekolah), $options: 'i' } })
+  }
+
+  if (negeri && negeri !== 'ALL') {
+    Object.assign(query, { 'data.infoPentadbiran.negeri': negeri })
+  }
+
+  if (jenis && jenis !== 'ALL') {
+    Object.assign(query, { 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(jenis), $options: 'i' } })
+  }
+
+  const schools = await EntitiSekolahModel.find(query).lean()
   req.log.info(
     {
       count: Array.isArray(schools) ? schools.length : undefined,
