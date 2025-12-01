@@ -109,7 +109,7 @@ const SekolahSchema = new Schema<Sekolah>(
     integrasi: { type: Boolean },
     koordinatXX: { type: Number },
     koordinatYY: { type: Number },
-    skmLEQ150: { type: Schema.Types.Mixed },
+    skmLEQ150: { type: Boolean },
     location: { type: GeoJSONPointSchema },
     updatedAt: { type: Date, default: Date.now },
   },

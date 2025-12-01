@@ -1,4 +1,4 @@
-import type { Role } from './enum'
+import type { RESPONSE_STATUS, Role } from './enum'
 
 export interface UserEntity {
   name: string
@@ -174,9 +174,25 @@ export interface Sekolah {
   /** Latitude coordinate */
   koordinatYY?: number | null
   /** SKM LEQ 150 status */
-  skmLEQ150?: any | null
+  skmLEQ150?: boolean | null
   /** GeoJSON point for geospatial queries */
   location?: GeoJSONPoint | null
   /** UTC timestamp when the document was last updated */
   updatedAt?: Date
+}
+export interface ResponseModel {
+  status: RESPONSE_STATUS
+  statusCode: number
+  data: unknown | ResponseListModel
+  error?: {
+    code: string
+    message: string
+    details?: Record<string, unknown>
+  }
+}
+
+export interface ResponseListModel {
+  items: unknown[]
+  pageNumber: number
+  pageSize: number
 }
