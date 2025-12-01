@@ -84,5 +84,5 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     },
     'schools:search',
   )
-  reply.send(schools)
+  return reply.send(createSuccessResponse(schools))
 }
