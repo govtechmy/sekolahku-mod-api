@@ -4,7 +4,7 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 
 import type { CreateSchoolBody } from '@/schemas'
 
-import { EntitiSekolahModel } from '../models/school.model'
+import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -20,7 +20,7 @@ export async function createSchool(req: FastifyRequest<{ Body: CreateSchoolBody 
 
 export async function getSchoolById(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const { id } = req.params
-  const doc = await EntitiSekolahModel.findById(id).lean()
+  const doc = await SekolahModel.findById(id).lean()
   if (!doc) {
     req.log.warn({ id }, 'schools:get:not-found')
     return reply.code(404).send(createErrorResponse('School not found', 'ERR_404', 404))
