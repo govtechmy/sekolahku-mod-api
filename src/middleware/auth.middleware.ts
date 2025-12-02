@@ -12,7 +12,13 @@ export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {
     return reply.code(401).send({ message: 'Missing API key' })
   }
 
-  const isValid = apiKey.length === env.API_KEY.length && timingSafeEqual(Buffer.from(apiKey), Buffer.from(env.API_KEY))
+  let isValid = false
+
+  try {
+    isValid = timingSafeEqual(Buffer.from(apiKey), Buffer.from(env.API_KEY))
+  } catch {
+    isValid = false
+  }
 
   if (!isValid) {
     req.log.warn({ path: req.url }, 'auth:invalid-api-key')
