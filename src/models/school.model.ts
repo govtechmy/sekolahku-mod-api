@@ -1,5 +1,5 @@
 import type { EntitiSekolah, EntitiSekolahData, InfoKomunikasi, InfoLokasi, InfoPentadbiran, InfoSekolah, Sekolah } from '@types'
-import { type GeoJSONPoint } from '@types'
+import { type GeoJSONPoint, SEKOLAH_STATUS } from '@types'
 import { model, Schema } from 'mongoose'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
@@ -70,6 +70,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     logoSekolah: { type: String },
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
+    status: { type: String, enum: Object.values(SEKOLAH_STATUS), required: true },
     updatedAt: { type: Date },
     createdAt: { type: Date },
   },
@@ -110,6 +111,8 @@ const SekolahSchema = new Schema<Sekolah>(
     koordinatXX: { type: Number },
     koordinatYY: { type: Number },
     skmLEQ150: { type: Boolean },
+    status: { type: String, enum: Object.values(SEKOLAH_STATUS) },
+    checksum: { type: String },
     location: { type: GeoJSONPointSchema },
     updatedAt: { type: Date, default: Date.now },
   },
