@@ -12,10 +12,10 @@ export async function registerSwaggerPlugins(app: FastifyInstance): Promise<void
       },
       components: {
         securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
+          apiKey: {
+            type: 'apiKey',
+            name: 'Api-Key',
+            in: 'header',
           },
         },
       },
