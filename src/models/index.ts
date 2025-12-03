@@ -1,3 +1,5 @@
+export * from './acara.model'
 export * from './school.model'
 export * from './school-analytic.model'
+export * from './siaran.model'
 export * from './user.model'

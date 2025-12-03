@@ -1,0 +1,6 @@
+GET http://localhost:3000/siaran
+Content-Type: application/json
+
+### Get Siaran By ID
+GET http://localhost:3000/siaran/692ea2ce0bc6882a56cd116b
+Content-Type: application/json
