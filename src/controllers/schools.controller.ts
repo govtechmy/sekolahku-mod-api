@@ -6,6 +6,8 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 import type { CreateSchoolBody } from '@/schemas'
 
 import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
+import { escapeStringRegex } from 'src/utils/escape-string-regex'
+import { env } from 'src/config/env.config'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -55,6 +57,8 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
     const data = foundSchools.map(school => ({
       kodSekolah: school.kodSekolah,
       location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
+      //origins : my.gov.digital.sekolahku-public-dev.s3.ap-southeast-5.amazonaws.com
+      dataUrl: `${env.DATA_URL}/sekolah/${school.kodSekolah}.json`
     }))
 
     return reply.send(createSuccessResponse(data))
@@ -64,11 +68,6 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
 
     return reply.code(500).send(errResponse)
   }
-}
-
-// Utility function to escape special characters in regex
-function escapeStringRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {

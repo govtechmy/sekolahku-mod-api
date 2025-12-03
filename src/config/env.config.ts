@@ -11,6 +11,7 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(1),
   REFRESH_TOKEN_SECRET: z.string().min(1),
   FRONTEND_ORIGIN: z.string().url().optional(),
+  DATA_URL : z.string().url()
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -22,6 +23,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     JWT_SECRET: secrets.JWT_SECRET,
     REFRESH_TOKEN_SECRET: secrets.REFRESH_TOKEN_SECRET,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
+    DATA_URL: secrets.DATA_URL,
   }
 }
 
