@@ -72,7 +72,10 @@ function escapeStringRegex(str: string): string {
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { namaSekolah, negeri, jenis } = req.query
+  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis } = req.query
+  const numericPage = Number(page) || 1
+  const numericLimit = Number(pageSize)
+  const skip = (numericPage - 1) * numericLimit
   const query = {}
 
   if (namaSekolah) {
@@ -87,13 +90,14 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     Object.assign(query, { 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(jenis), $options: 'i' } })
   }
 
-  const schools = await EntitiSekolahModel.find(query).lean()
-  req.log.info(
-    {
-      count: Array.isArray(schools) ? schools.length : undefined,
-      filters: { namaSekolah, negeri, jenis },
-    },
-    'schools:search',
-  )
-  return reply.send(createSuccessResponse(schools))
+  const total = await EntitiSekolahModel.countDocuments(query)
+  const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
+  const response = createSuccessResponse({
+    items: schools,
+    totalRecords: total,
+    pageNumber: page,
+    pageSize: pageSize,
+  })
+
+  return reply.send(response)
 }

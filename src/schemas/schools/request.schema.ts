@@ -56,6 +56,9 @@ export const createSchoolBodySchema = z.object({
 })
 
 export const listSchoolsSearchQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).default(12),
+  sort: z.union([z.string(), z.array(z.string())]).optional(),
   namaSekolah: z.string().optional(),
   negeri: z.enum([...NEGERI, 'ALL']).optional(),
   jenis: z.string().optional(),
