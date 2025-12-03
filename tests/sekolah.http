@@ -1,3 +1,6 @@
 GET http://localhost:3000/schools/find-nearby?latitude=3.139&longitude=101.686&radiusInMeter=500
 Content-Type: application/json  
-Api-Key: this_is_a_development_api_key_for_ammar_to_test_sekolahku_api_development_only
+
+###
+GET http://localhost:3000/schools/search?latitude=3.139&longitude=101.686&radiusInMeter=500
+Content-Type: application/json  

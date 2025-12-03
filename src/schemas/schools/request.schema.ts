@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { NEGERI } from '../../types/enum'
+
 const GeoJSONPointSchema = z.object({
   type: z.literal('Point'),
   coordinates: z.tuple([z.number(), z.number()]),
@@ -21,7 +23,7 @@ const InfoKomunikasiSchema = z.object({
 })
 
 const InfoPentadbiranSchema = z.object({
-  negeri: z.string().optional(),
+  negeri: z.enum(NEGERI).optional(),
   ppd: z.string().optional(),
   parlimen: z.string().optional(),
   bantuan: z.string().optional(),
@@ -52,12 +54,25 @@ export const createSchoolBodySchema = z.object({
   updatedAt: z.date().optional(),
   createdAt: z.date().optional(),
 })
+
+export const listSchoolsSearchQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).default(12),
+  sort: z.union([z.string(), z.array(z.string())]).optional(),
+  namaSekolah: z.string().optional(),
+  negeri: z.enum([...NEGERI, 'ALL']).optional(),
+  jenis: z.string().optional(),
+})
+
+export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
+
 export type CreateSchoolBody = z.infer<typeof createSchoolBodySchema>
 
 export const getNearbySchoolByLocationSchema = z.object({
-  radiusInMeter: z.number(),
-  latitude: z.number(),
-  longitude: z.number(),
+  // Coerce querystring values (strings) into numbers
+  radiusInMeter: z.coerce.number().positive(),
+  latitude: z.coerce.number().refine(v => v >= -90 && v <= 90),
+  longitude: z.coerce.number().refine(v => v >= -180 && v <= 180),
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>
