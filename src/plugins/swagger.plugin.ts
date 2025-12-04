@@ -14,7 +14,7 @@ export async function registerSwaggerPlugins(app: FastifyInstance): Promise<void
         securitySchemes: {
           apiKey: {
             type: 'apiKey',
-            name: 'Api-Key',
+            name: 'Sekolahku-X-Api-Key',
             in: 'header',
           },
         },
