@@ -13,7 +13,7 @@ export async function registerSiaranRoutes(app: FastifyInstance) {
         tags: ['Siaran'],
         summary: 'List all Siaran',
         security: [{ bearerAuth: [] }],
-        // security: [{ apiKey: [] }], use this once merged
+        // security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getSiaranList,
@@ -28,7 +28,7 @@ export async function registerSiaranRoutes(app: FastifyInstance) {
         tags: ['Siaran'],
         summary: 'Get Siaran by ID',
         security: [{ bearerAuth: [] }],
-        // security: [{ apiKey: [] }], use this once merged
+        // security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getSiaranById,

@@ -13,7 +13,7 @@ export async function registerAcaraRoutes(app: FastifyInstance) {
         tags: ['Acara'],
         summary: 'List all Acara',
         security: [{ bearerAuth: [] }],
-        // security: [{ apiKey: [] }], use this once merged
+        // security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getAcaraList,
@@ -28,7 +28,7 @@ export async function registerAcaraRoutes(app: FastifyInstance) {
         tags: ['Acara'],
         summary: 'Get Acara by ID',
         security: [{ bearerAuth: [] }],
-        // security: [{ apiKey: [] }], use this once merged
+        // security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getAcaraById,
