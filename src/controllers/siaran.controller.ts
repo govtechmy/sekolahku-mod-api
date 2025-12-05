@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import { escapeStringRegex } from 'src/utils/regex.utils'
@@ -35,9 +36,14 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     return rep.code(400).send(createErrorResponse('Siaran ID is required', 'ERR_400', 400))
   }
 
+  if (!Types.ObjectId.isValid(id)) {
+    return rep.code(400).send(createErrorResponse('Invalid Siaran ID format', 'ERR_400', 400))
+  }
+
   const siaran = await SiaranModel.findById(id).lean()
 
   if (!siaran) {
+    req.log.warn({ id }, 'siaran:get:not-found')
     return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
   }
 
