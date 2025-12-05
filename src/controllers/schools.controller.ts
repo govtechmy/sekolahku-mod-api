@@ -91,8 +91,6 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   }
 
   try {
-    const total = await EntitiSekolahModel.countDocuments(query)
-    
     if (latitude && longitude) {
       const locationQuery = {
         ...query,
@@ -106,6 +104,17 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
           },
         },
       }
+
+      const countQuery = {
+        ...query,
+        'data.infoLokasi.location': {
+          $geoWithin: {
+            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100]
+          }
+        }
+      }
+
+      const total = await EntitiSekolahModel.countDocuments(countQuery)
 
       const schools = await EntitiSekolahModel.find(locationQuery)
         .skip(skip)
@@ -121,6 +130,8 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
       return reply.send(response)
     } else {
+      const total = await EntitiSekolahModel.countDocuments(query)
+      
       const schools = await EntitiSekolahModel.find(query)
         .skip(skip)
         .limit(numericLimit)
