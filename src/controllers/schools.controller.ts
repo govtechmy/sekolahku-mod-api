@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
@@ -64,11 +65,6 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
 
     return reply.code(500).send(errResponse)
   }
-}
-
-// Utility function to escape special characters in regex
-function escapeStringRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {

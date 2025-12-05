@@ -1,6 +1,8 @@
 GET http://localhost:3000/schools/find-nearby?latitude=3.139&longitude=101.686&radiusInMeter=500
 Content-Type: application/json  
+Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
 
 ###
 GET http://localhost:3000/schools/search?latitude=3.139&longitude=101.686&radiusInMeter=500
 Content-Type: application/json  
+Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg

@@ -1,34 +1,35 @@
 import { authHeaderSchema } from '@schemas'
 import type { FastifyInstance } from 'fastify'
 import { getSiaranById, getSiaranList } from 'src/controllers/siaran.controller'
-import { getSiaranByIdParamsSchema, listSiaransQuerySchema } from 'src/schemas/siaran'
+import { authMiddleware } from 'src/middleware/auth.middleware'
+import { type GetSiaranByIdParams, getSiaranByIdParamsSchema, type ListSiaransQuery, listSiaransQuerySchema } from 'src/schemas/siaran'
 
 export async function registerSiaranRoutes(app: FastifyInstance) {
-  app.get(
+  app.get<{ Querystring: ListSiaransQuery }>(
     '/siaran',
     {
+      preHandler: authMiddleware,
       schema: {
         headers: authHeaderSchema,
         querystring: listSiaransQuerySchema,
         tags: ['Siaran'],
         summary: 'List all Siaran',
-        security: [{ bearerAuth: [] }],
-        // security: [{ 'Sekolahku-X-Api-Key': [] }],
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getSiaranList,
   )
 
-  app.get(
+  app.get<{ Params: GetSiaranByIdParams }>(
     '/siaran/:id',
     {
+      preHandler: authMiddleware,
       schema: {
         headers: authHeaderSchema,
         params: getSiaranByIdParamsSchema,
         tags: ['Siaran'],
         summary: 'Get Siaran by ID',
-        security: [{ bearerAuth: [] }],
-        // security: [{ 'Sekolahku-X-Api-Key': [] }],
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getSiaranById,

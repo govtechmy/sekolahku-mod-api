@@ -1,34 +1,35 @@
 import { authHeaderSchema } from '@schemas'
 import type { FastifyInstance } from 'fastify'
 import { getAcaraById, getAcaraList } from 'src/controllers/acara.controller'
-import { getAcaraByIdParamsSchema, listAcarasQuerySchema } from 'src/schemas/acara'
+import { authMiddleware } from 'src/middleware/auth.middleware'
+import { getAcaraByIdParamsSchema, listAcarasQuerySchema, type ListAcarasQuery, type GetAcaraByIdParams } from 'src/schemas/acara'
 
 export async function registerAcaraRoutes(app: FastifyInstance) {
-  app.get(
+  app.get<{ Querystring: ListAcarasQuery }>(
     '/acara',
     {
+      preHandler: authMiddleware,
       schema: {
         headers: authHeaderSchema,
         querystring: listAcarasQuerySchema,
         tags: ['Acara'],
         summary: 'List all Acara',
-        security: [{ bearerAuth: [] }],
-        // security: [{ 'Sekolahku-X-Api-Key': [] }],
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getAcaraList,
   )
 
-  app.get(
+  app.get<{ Params: GetAcaraByIdParams }>(
     '/acara/:id',
     {
+      preHandler: authMiddleware,
       schema: {
         headers: authHeaderSchema,
         params: getAcaraByIdParamsSchema,
         tags: ['Acara'],
         summary: 'Get Acara by ID',
-        security: [{ bearerAuth: [] }],
-        // security: [{ 'Sekolahku-X-Api-Key': [] }],
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
     getAcaraById,
