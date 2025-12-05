@@ -35,15 +35,15 @@ export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdPar
     return rep.code(400).send(createErrorResponse('Acara ID is required', 'ERR_400', 400))
   }
 
+  if (!Types.ObjectId.isValid(id)) {
+    return rep.code(400).send(createErrorResponse('Invalid Acara ID format', 'ERR_400', 400))
+  }
+
   const acara = await AcaraModel.findById(id).lean()
 
   if (!acara) {
     req.log.warn({ id }, 'acara:get:not-found')
     return rep.code(404).send(createErrorResponse('Acara not found', 'ERR_404', 404))
-  }
-
-  if (!Types.ObjectId.isValid(id)) {
-    return rep.code(400).send(createErrorResponse('Invalid Acara ID format', 'ERR_400', 400))
   }
 
   return rep.send(createSuccessResponse(acara))
