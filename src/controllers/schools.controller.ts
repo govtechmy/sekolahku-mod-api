@@ -5,7 +5,7 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 
 import type { CreateSchoolBody } from '@/schemas'
 
-import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
+import { EntitiSekolahModel } from '../models/school.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -21,7 +21,7 @@ export async function createSchool(req: FastifyRequest<{ Body: CreateSchoolBody 
 
 export async function getSchoolById(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const { id } = req.params
-  const doc = await SekolahModel.findOne({ kodSekolah: id }).lean()
+  const doc = await EntitiSekolahModel.findOne({ kodSekolah: id }).lean()
   if (!doc) {
     req.log.warn({ id }, 'schools:get:not-found')
     return reply.code(404).send(createErrorResponse('School not found', 'ERR_404', 404))
@@ -109,18 +109,15 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         ...query,
         'data.infoLokasi.location': {
           $geoWithin: {
-            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100]
-          }
-        }
+            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100],
+          },
+        },
       }
 
       const total = await EntitiSekolahModel.countDocuments(countQuery)
 
-      const schools = await EntitiSekolahModel.find(locationQuery)
-        .skip(skip)
-        .limit(numericLimit)
-        .lean()
-      
+      const schools = await EntitiSekolahModel.find(locationQuery).skip(skip).limit(numericLimit).lean()
+
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
@@ -131,12 +128,9 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       return reply.send(response)
     } else {
       const total = await EntitiSekolahModel.countDocuments(query)
-      
-      const schools = await EntitiSekolahModel.find(query)
-        .skip(skip)
-        .limit(numericLimit)
-        .lean()
-      
+
+      const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
+
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
