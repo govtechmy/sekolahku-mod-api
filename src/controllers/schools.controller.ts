@@ -72,7 +72,7 @@ function escapeStringRegex(str: string): string {
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis } = req.query
+  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude, radiusInMeter } = req.query
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -90,14 +90,65 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     Object.assign(query, { 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(jenis), $options: 'i' } })
   }
 
-  const total = await EntitiSekolahModel.countDocuments(query)
-  const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
-  const response = createSuccessResponse({
-    items: schools,
-    totalRecords: total,
-    pageNumber: page,
-    pageSize: pageSize,
-  })
+  try {
+    if (latitude && longitude) {
+      const locationQuery = {
+        ...query,
+        'data.infoLokasi.location': {
+          $nearSphere: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude],
+            },
+            $maxDistance: radiusInMeter || 100000,
+          },
+        },
+      }
 
-  return reply.send(response)
+      const countQuery = {
+        ...query,
+        'data.infoLokasi.location': {
+          $geoWithin: {
+            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100]
+          }
+        }
+      }
+
+      const total = await EntitiSekolahModel.countDocuments(countQuery)
+
+      const schools = await EntitiSekolahModel.find(locationQuery)
+        .skip(skip)
+        .limit(numericLimit)
+        .lean()
+      
+      const response = createSuccessResponse({
+        items: schools,
+        totalRecords: total,
+        pageNumber: page,
+        pageSize: pageSize,
+      })
+
+      return reply.send(response)
+    } else {
+      const total = await EntitiSekolahModel.countDocuments(query)
+      
+      const schools = await EntitiSekolahModel.find(query)
+        .skip(skip)
+        .limit(numericLimit)
+        .lean()
+      
+      const response = createSuccessResponse({
+        items: schools,
+        totalRecords: total,
+        pageNumber: page,
+        pageSize: pageSize,
+      })
+
+      return reply.send(response)
+    }
+  } catch (error) {
+    req.log.error({ err: error }, 'schools:search-suggestion:error')
+    const errResponse = createErrorResponse('Failed to fetch school search suggestions. Please try again later.', 'ERR_500', 500)
+    return reply.code(500).send(errResponse)
+  }
 }
