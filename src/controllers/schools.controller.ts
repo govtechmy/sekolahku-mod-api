@@ -6,6 +6,7 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 import type { CreateSchoolBody } from '@/schemas'
 
 import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
+import { SystemConfigModel } from '../models/system-config.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -32,7 +33,11 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, radiusInMeter } = req.query
+  const { latitude, longitude } = req.query
+
+  // Fetch radius from SystemConfig
+  const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
+  const radius = radiusConfig?.value ?? 1000
 
   //Querying to find school in db
   try {
@@ -43,7 +48,7 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
             type: 'Point',
             coordinates: [longitude, latitude],
           },
-          $maxDistance: radiusInMeter,
+          $maxDistance: radius,
         },
       },
     }).lean()
@@ -109,18 +114,15 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         ...query,
         'data.infoLokasi.location': {
           $geoWithin: {
-            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100]
-          }
-        }
+            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100],
+          },
+        },
       }
 
       const total = await EntitiSekolahModel.countDocuments(countQuery)
 
-      const schools = await EntitiSekolahModel.find(locationQuery)
-        .skip(skip)
-        .limit(numericLimit)
-        .lean()
-      
+      const schools = await EntitiSekolahModel.find(locationQuery).skip(skip).limit(numericLimit).lean()
+
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
@@ -131,12 +133,9 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       return reply.send(response)
     } else {
       const total = await EntitiSekolahModel.countDocuments(query)
-      
-      const schools = await EntitiSekolahModel.find(query)
-        .skip(skip)
-        .limit(numericLimit)
-        .lean()
-      
+
+      const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
+
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
