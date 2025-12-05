@@ -7,6 +7,11 @@ export enum RESPONSE_STATUS {
   ERROR = 'ERROR',
 }
 
+export enum SEKOLAH_STATUS {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
 export const NEGERI = [
   'JOHOR',
   'KEDAH',
