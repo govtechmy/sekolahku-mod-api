@@ -9,6 +9,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   MONGODB_URI: z.string().min(1),
   API_KEY: z.string().min(1),
+  DATAPROC_SERVICE_URL: z.string(),
   FRONTEND_ORIGIN: z
     .string()
     .optional()
@@ -23,6 +24,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     PORT: secrets.PORT,
     MONGODB_URI: secrets.MONGODB_URI,
     API_KEY: secrets.API_KEY,
+    DATAPROC_SERVICE_URL: secrets.DATAPROC_SERVICE_URL,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
     MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
   }
