@@ -57,7 +57,6 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
     const data = foundSchools.map(school => ({
       kodSekolah: school.kodSekolah,
       location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
-      //origins : my.gov.digital.sekolahku-public-dev.s3.ap-southeast-5.amazonaws.com
       dataUrl: `${env.DATA_URL}/${school.data.infoPentadbiran.negeri}/${school.data.infoPentadbiran.parlimen}/${school.kodSekolah}/${school.kodSekolah}.json`,
     }))
 
