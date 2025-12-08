@@ -60,7 +60,7 @@ export const listSchoolsSearchQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).default(12),
   sort: z.union([z.string(), z.array(z.string())]).optional(),
   namaSekolah: z.string().optional(),
-  negeri: z.enum([...NEGERI, 'ALL']).optional(),
+  negeri: z.enum([...Object.values(NEGERI), 'ALL']).optional(),
   jenis: z.string().optional(),
   latitude: z.coerce
     .number()

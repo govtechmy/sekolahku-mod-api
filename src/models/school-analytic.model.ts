@@ -20,7 +20,6 @@ const AnalitikSekolahDataSchema = new Schema<AnalitikSekolahData>(
 
 const EntitiAnalitikSekolahSchema = new Schema<EntitiAnalitikSekolah>(
   {
-    _id: { type: Number, default: 1 },
     jumlahSekolah: { type: Number, required: true },
     jumlahGuru: { type: Number, required: true },
     jumlahPelajar: { type: Number, required: true },

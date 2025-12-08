@@ -8,7 +8,7 @@ import {
   getSchoolsSearchSuggestion,
   listSchools,
 } from '../src/controllers/schools.controller'
-import { EntitiSekolahModel } from '../src/models/school.model'
+import { EntitiSekolahModel } from 'src/models/school-entity.model'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
 
 describe('schools controller', () => {
