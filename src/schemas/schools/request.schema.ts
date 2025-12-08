@@ -62,6 +62,15 @@ export const listSchoolsSearchQuerySchema = z.object({
   namaSekolah: z.string().optional(),
   negeri: z.enum([...NEGERI, 'ALL']).optional(),
   jenis: z.string().optional(),
+  latitude: z.coerce
+    .number()
+    .refine(v => v >= -90 && v <= 90)
+    .optional(),
+  longitude: z.coerce
+    .number()
+    .refine(v => v >= -180 && v <= 180)
+    .optional(),
+  radiusInMeter: z.coerce.number().positive().optional(),
 })
 
 export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
