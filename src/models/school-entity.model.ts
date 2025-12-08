@@ -1,14 +1,14 @@
 import type {
-    EntitiSekolah,
-    EntitiSekolahData,
-    InfoKomunikasi,
-    InfoLokasi,
-    InfoPentadbiran,
-    InfoSekolah,
-    GeoJSONPoint,
-  } from '@types'
-  import { SEKOLAH_STATUS } from '@types'
-  import { model, Schema } from 'mongoose'
+  EntitiSekolah,
+  EntitiSekolahData,
+  InfoKomunikasi,
+  InfoLokasi,
+  InfoPentadbiran,
+  InfoSekolah,
+  GeoJSONPoint,
+} from '@types'
+import { SEKOLAH_STATUS } from '@types'
+import { model, Schema } from 'mongoose'
   
   const InfoSekolahSchema = new Schema<InfoSekolah>(
     {
@@ -47,7 +47,12 @@ import type {
 
   const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
     {
-      type: { type: String, enum: ['Point'], required: true, default: 'Point' },
+      type: {
+        type: String,
+        enum: ['Point'],
+        required: true,
+        default: 'Point',
+      },
       coordinates: { type: [Number], required: true },
     },
     { _id: false }
