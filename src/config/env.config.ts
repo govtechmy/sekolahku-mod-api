@@ -8,9 +8,13 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
   PORT: z.coerce.number().int().positive().default(3000),
   MONGODB_URI: z.string().min(1),
-  JWT_SECRET: z.string().min(1),
-  REFRESH_TOKEN_SECRET: z.string().min(1),
-  FRONTEND_ORIGIN: z.string().url().optional(),
+  API_KEY: z.string().min(1),
+  DATAPROC_SERVICE_URL: z.string(),
+  FRONTEND_ORIGIN: z
+    .string()
+    .optional()
+    .refine(val => !val || URL.canParse(val), { message: 'Invalid URL' }),
+  MULTIPLE_ORIGINS: z.string().optional(),
   DATA_URL : z.string().url()
 })
 
@@ -20,9 +24,10 @@ function mapSecrets(secrets: Record<string, unknown>) {
     LOG_LEVEL: secrets.LOG_LEVEL,
     PORT: secrets.PORT,
     MONGODB_URI: secrets.MONGODB_URI,
-    JWT_SECRET: secrets.JWT_SECRET,
-    REFRESH_TOKEN_SECRET: secrets.REFRESH_TOKEN_SECRET,
+    API_KEY: secrets.API_KEY,
+    DATAPROC_SERVICE_URL: secrets.DATAPROC_SERVICE_URL,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
+    MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
     DATA_URL: secrets.DATA_URL,
   }
 }

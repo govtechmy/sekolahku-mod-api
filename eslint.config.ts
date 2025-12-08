@@ -1,16 +1,14 @@
 import pluginJs from '@eslint/js'
+import { defineConfig } from 'eslint/config'
 import prettier from 'eslint-plugin-prettier'
-import securityPlugin from 'eslint-plugin-security'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import unicornPlugin from 'eslint-plugin-unicorn'
 import globals from 'globals'
-import tsPlugin from 'typescript-eslint'
+import tseslint from 'typescript-eslint'
 
-export default [
-  securityPlugin.configs.recommended,
-  {
-    files: ['**/*.ts'],
-  },
+export default defineConfig([
+  tseslint.configs.recommended,
+
   {
     languageOptions: { globals: globals.node },
   },
@@ -22,12 +20,14 @@ export default [
       quotes: ['error', 'single', { avoidEscape: true }],
     },
   },
+  // TypeScript Eslint
   {
     rules: {
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
     },
   },
+  // Prettier
   {
     plugins: {
       prettier,
@@ -51,6 +51,7 @@ export default [
       ],
     },
   },
+  // Unicorn
   {
     plugins: {
       unicorn: unicornPlugin,
@@ -66,7 +67,6 @@ export default [
     },
   },
   pluginJs.configs.recommended,
-  ...tsPlugin.configs.recommended,
   {
     ignores: [
       'node_modules/',
@@ -92,4 +92,4 @@ export default [
       '.build',
     ],
   },
-]
+])

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 export const ROLES = ['admin', 'editor', 'viewer'] as const
 
 export type Role = (typeof ROLES)[number]
@@ -5,6 +6,11 @@ export type Role = (typeof ROLES)[number]
 export enum RESPONSE_STATUS {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
+}
+
+export enum SEKOLAH_STATUS {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
 }
 
 export const NEGERI = [

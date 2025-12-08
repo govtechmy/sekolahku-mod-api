@@ -56,9 +56,21 @@ export const createSchoolBodySchema = z.object({
 })
 
 export const listSchoolsSearchQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).default(12),
+  sort: z.union([z.string(), z.array(z.string())]).optional(),
   namaSekolah: z.string().optional(),
   negeri: z.enum([...NEGERI, 'ALL']).optional(),
   jenis: z.string().optional(),
+  latitude: z.coerce
+    .number()
+    .refine(v => v >= -90 && v <= 90)
+    .optional(),
+  longitude: z.coerce
+    .number()
+    .refine(v => v >= -180 && v <= 180)
+    .optional(),
+  radiusInMeter: z.coerce.number().positive().optional(),
 })
 
 export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
