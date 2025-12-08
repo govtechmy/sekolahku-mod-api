@@ -9,7 +9,11 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   MONGODB_URI: z.string().min(1),
   API_KEY: z.string().min(1),
-  FRONTEND_ORIGIN: z.string().url().optional(),
+  FRONTEND_ORIGIN: z
+    .string()
+    .optional()
+    .refine(val => !val || URL.canParse(val), { message: 'Invalid URL' }),
+  MULTIPLE_ORIGINS: z.string().optional(),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -20,6 +24,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     MONGODB_URI: secrets.MONGODB_URI,
     API_KEY: secrets.API_KEY,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
+    MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
   }
 }
 
