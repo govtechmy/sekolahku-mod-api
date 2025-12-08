@@ -1,4 +1,4 @@
-GET http://localhost:3000/schools/find-nearby?latitude=3.139&longitude=101.686&radiusInMeter=500
+GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&radiusInMeter=10000
 Content-Type: application/json  
 Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
 
