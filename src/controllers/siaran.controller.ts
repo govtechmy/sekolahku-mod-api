@@ -26,7 +26,16 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     .limit(limit)
     .lean()
 
-  return rep.send(createSuccessResponse(siaranList))
+  const total = await SiaranModel.countDocuments(query)
+
+  const response = createSuccessResponse({
+    items: siaranList,
+    totalRecords: total,
+    pageNumber: page,
+    pageSize: limit,
+  })
+
+  return rep.send(response)
 }
 
 export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdParams }>, rep: FastifyReply) {

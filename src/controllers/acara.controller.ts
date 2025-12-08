@@ -25,7 +25,16 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
     .limit(limit)
     .lean()
 
-  return rep.send(createSuccessResponse(acaraList))
+  const total = await AcaraModel.countDocuments(query)
+
+  const response = createSuccessResponse({
+    items: acaraList,
+    totalRecords: total,
+    pageNumber: page,
+    pageSize: limit,
+  })
+
+  return rep.send(response)
 }
 
 export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdParams }>, rep: FastifyReply) {
