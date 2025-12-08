@@ -1,7 +1,1 @@
-export {
-  type RevalidateRequest,
-  type RevalidateResponse,
-  revalidateRequestSchema,
-  revalidateResponseSchema,
-} from './request.schema'
-
+export { type RevalidateRequest, revalidateRequestSchema, type RevalidateResponse, revalidateResponseSchema } from './request.schema'

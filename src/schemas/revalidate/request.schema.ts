@@ -8,4 +8,3 @@ export const revalidateResponseSchema = z.object({
 
 export type RevalidateRequest = z.infer<typeof revalidateRequestSchema>
 export type RevalidateResponse = z.infer<typeof revalidateResponseSchema>
-

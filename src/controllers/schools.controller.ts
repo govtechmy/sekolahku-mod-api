@@ -1,13 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { env } from 'src/config/env.config'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
 
-import { EntitiSekolahModel, SekolahModel } from '../models/school.model'
-import { escapeStringRegex } from 'src/utils/escape-string-regex'
-import { env } from 'src/config/env.config'
+import { EntitiSekolahModel } from '../models/school.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -58,15 +58,13 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
       kodSekolah: school.kodSekolah,
       location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
       //origins : my.gov.digital.sekolahku-public-dev.s3.ap-southeast-5.amazonaws.com
-      // dataUrl: `${env.DATA_URL}/sekolah/${school.kodSekolah}.json`
-      dataUrl: `${env.DATA_URL}/${school.data.infoPentadbiran.negeri}/${school.data.infoPentadbiran.parlimen}/${school.kodSekolah}/${school.kodSekolah}.json`
+      dataUrl: `${env.DATA_URL}/${school.data.infoPentadbiran.negeri}/${school.data.infoPentadbiran.parlimen}/${school.kodSekolah}/${school.kodSekolah}.json`,
     }))
 
     return reply.send(createSuccessResponse(data))
   } catch (error) {
     req.log.error({ err: error }, 'schools:getNearby:error')
     const errResponse = createErrorResponse('Failed to fetch nearby schools. Please check your coordinates and try again.', 'ERR_500', 500)
-
     return reply.code(500).send(errResponse)
   }
 }
