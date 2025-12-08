@@ -35,4 +35,4 @@ export const SystemConfigSchema = new Schema<ISystemConfigDocument>(
   },
 )
 
-export const SystemConfigModel = model<ISystemConfigDocument>('SystemConfig', SystemConfigSchema)
+export const SystemConfigModel = model<ISystemConfigDocument>('SystemConfig', SystemConfigSchema, 'SystemConfig')
