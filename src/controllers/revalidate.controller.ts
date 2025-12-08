@@ -6,4 +6,3 @@ export async function revalidateSchoolEntities(req: FastifyRequest, reply: Fasti
   await revalidateSchoolEntitiesService()
   return reply.send({ status: 'ok' })
 }
-

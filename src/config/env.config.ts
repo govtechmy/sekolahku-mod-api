@@ -15,6 +15,7 @@ const EnvSchema = z.object({
     .optional()
     .refine(val => !val || URL.canParse(val), { message: 'Invalid URL' }),
   MULTIPLE_ORIGINS: z.string().optional(),
+  DATA_URL: z.string().url(),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -27,6 +28,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     DATAPROC_SERVICE_URL: secrets.DATAPROC_SERVICE_URL,
     FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
     MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
+    DATA_URL: secrets.DATA_URL,
   }
 }
 
