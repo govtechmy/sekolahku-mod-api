@@ -177,7 +177,7 @@ export interface Sekolah {
   status?: SEKOLAH_STATUS | null
   /** checksum */
   checksum?: string | null
-  /** UTC timestamp when the document was last updated */
+  /** UTC timestamp when the document was created */
   createdAt?: Date
 }
 export interface ResponseModel {
