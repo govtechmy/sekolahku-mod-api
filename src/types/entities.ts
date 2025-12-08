@@ -204,3 +204,10 @@ export interface ResponseListModel {
   pageNumber: number
   pageSize: number
 }
+
+export interface SystemConfig {
+  key: string
+  value: string | number | boolean
+  description?: string
+  updatedAt: Date
+}

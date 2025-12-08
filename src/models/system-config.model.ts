@@ -1,15 +1,9 @@
-import { type Document, model, Schema } from 'mongoose'
+import { model, Schema } from 'mongoose'
+import { type SystemConfig } from '@types'
 
-export interface ISystemConfig {
-  key: string
-  value: string | number | boolean
-  description?: string
-  updatedAt: Date
-}
+export interface ISystemConfigDocument extends SystemConfig{}
 
-export interface ISystemConfigDocument extends ISystemConfig, Document {}
-
-export const SystemConfigSchema = new Schema<ISystemConfigDocument>(
+export const SystemConfigSchema = new Schema<SystemConfigDocument>(
   {
     key: {
       type: String,
@@ -35,4 +29,4 @@ export const SystemConfigSchema = new Schema<ISystemConfigDocument>(
   },
 )
 
-export const SystemConfigModel = model<ISystemConfigDocument>('SystemConfig', SystemConfigSchema, 'SystemConfig')
+export const SystemConfigModel = model<SystemConfigDocument>('SystemConfig', SystemConfigSchema, 'SystemConfig')
