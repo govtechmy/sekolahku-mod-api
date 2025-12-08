@@ -287,6 +287,27 @@ describe('schools controller', () => {
       expect(mockReply.send).toHaveBeenCalled()
     })
 
+    test('should return search results with location', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
+      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(mockSchools)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000, negeri: 'something' },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalled()
+      expect(EntitiSekolahModel.find).toHaveBeenCalled()
+      expect(mockReply.send).toHaveBeenCalled()
+    })
+
     test('should handle error', async () => {
       ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockRejectedValue(new Error('DB error'))
 
