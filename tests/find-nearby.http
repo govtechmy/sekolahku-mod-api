@@ -24,7 +24,7 @@ Response: 200 OK
     },
     {
       "markerType": "GROUP",
-      "radiusInMeter": 10_000,
+      "radiusInMeter": 10.000,
       "infoLokasi": {
         "koordinatXX": 37.7749,
         "koordinatYY": -122.4194
