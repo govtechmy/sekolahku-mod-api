@@ -1,6 +1,4 @@
-import mongoose from 'mongoose'
-
-import { connectToDatabase } from '../config/db.config'
+import { connectToDatabase, disconnectFromDatabase } from '../config/db.config'
 
 async function main() {
   try {
@@ -10,7 +8,7 @@ async function main() {
     process.stderr.write(`${message}\n`)
     process.exitCode = 1
   } finally {
-    await mongoose.disconnect()
+    await disconnectFromDatabase()
   }
 }
 

@@ -1,6 +1,8 @@
 import type { EntitiSekolah, EntitiSekolahData, InfoKomunikasi, InfoLokasi, InfoPentadbiran, InfoSekolah, Sekolah } from '@types'
 import { type GeoJSONPoint, SEKOLAH_STATUS } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+
+import { sekolahkuConnection } from '../config/db.config'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {
@@ -79,7 +81,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
 
 EntitiSekolahSchema.index({ geo: '2dsphere' })
 
-export const EntitiSekolahModel = model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema, 'EntitiSekolah')
+export const EntitiSekolahModel = sekolahkuConnection.model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema, 'EntitiSekolah')
 
 const SekolahSchema = new Schema<Sekolah>(
   {
@@ -125,4 +127,4 @@ SekolahSchema.index({ jenisLabel: 1 })
 SekolahSchema.index({ peringkat: 1 })
 SekolahSchema.index({ location: '2dsphere' })
 
-export const SekolahModel = model<Sekolah>('Sekolah', SekolahSchema, 'Sekolah')
+export const SekolahModel = sekolahkuConnection.model<Sekolah>('Sekolah', SekolahSchema, 'Sekolah')

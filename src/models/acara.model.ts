@@ -1,5 +1,7 @@
 import type { Acara, AcaraAttachment, AcaraContent } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+
+import { payloadConnection } from '../config/db.config'
 
 const AcaraContentSchema = new Schema<AcaraContent>(
   {
@@ -39,4 +41,4 @@ AcaraSchema.index({ articleDate: -1 })
 AcaraSchema.index({ category: 1 })
 AcaraSchema.index({ title: 'text' })
 
-export const AcaraModel = model<Acara>('Acara', AcaraSchema, 'acaras')
+export const AcaraModel = payloadConnection.model<Acara>('Acara', AcaraSchema, 'acaras')

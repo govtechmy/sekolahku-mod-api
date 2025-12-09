@@ -1,5 +1,7 @@
 import type { Siaran, SiaranAttachment, SiaranContent } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+
+import { payloadConnection } from '../config/db.config'
 
 const SiaranContentSchema = new Schema<SiaranContent>(
   {
@@ -39,4 +41,4 @@ SiaranSchema.index({ articleDate: -1 })
 SiaranSchema.index({ category: 1 })
 SiaranSchema.index({ title: 'text' })
 
-export const SiaranModel = model<Siaran>('Siaran', SiaranSchema, 'siarans')
+export const SiaranModel = payloadConnection.model<Siaran>('Siaran', SiaranSchema, 'siarans')
