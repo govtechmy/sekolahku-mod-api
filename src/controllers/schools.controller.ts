@@ -36,7 +36,7 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
   const { latitude, longitude, radiusInMeter } = req.query
 
   const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
-  const radius = radiusConfig?.value ?? 1000
+  const radius = Number(radiusConfig?.value ?? 100000)
   const effectiveRadius = radiusInMeter ?? radius
 
   //Querying to find school in db
