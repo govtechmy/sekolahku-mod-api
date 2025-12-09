@@ -20,7 +20,8 @@ Response: 200 OK
         "koordinatXX": 37.7749,
         "koordinatYY": -122.4194
       },
-      "kodSekolah": "SCH001"
+      "kodSekolah": "SCH001",
+      "dataUrl": "https://data.sekolahku.my/schools/SCH001/SCH001.json"
     },
     {
       "markerType": "GROUP",
@@ -35,7 +36,8 @@ Response: 200 OK
         "infoLokasi": {
           "koordinatXX": 37.7750,
           "koordinatYY": -122.4180
-        }
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH002/SCH002.json"
       }, {
         "kodSekolah": "SCH003",
         "infoLokasi": {
@@ -47,19 +49,22 @@ Response: 200 OK
         "infoLokasi": {
           "koordinatXX": 37.7770,
           "koordinatYY": -122.4160
-        }
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH004/SCH004.json"
       }, {
         "kodSekolah": "SCH005",
         "infoLokasi": {
           "koordinatXX": 37.7780,
           "koordinatYY": -122.4150
-        }
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH005/SCH005.json"
       }, {
         "kodSekolah": "SCH006",
         "infoLokasi": {
           "koordinatXX": 37.7790,
           "koordinatYY": -122.4140
-        }
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH006/SCH006.json"
       }]
     }
   ]
