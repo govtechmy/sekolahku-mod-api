@@ -6,6 +6,7 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 import type { CreateSchoolBody } from '@/schemas'
 
 import { EntitiSekolahModel } from '../models/school.model'
+import { SystemConfigModel } from 'src/models/system-config.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
@@ -32,11 +33,11 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude } = req.query
+  const { latitude, longitude, radiusInMeter } = req.query
 
-  // Fetch radius from SystemConfig
   const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
   const radius = radiusConfig?.value ?? 1000
+  const effectiveRadius = radiusInMeter ?? radius
 
   //Querying to find school in db
   try {
@@ -47,7 +48,7 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
             type: 'Point',
             coordinates: [longitude, latitude],
           },
-          $maxDistance: radius,
+          $maxDistance: effectiveRadius,
         },
       },
     }).lean()
@@ -96,6 +97,13 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
   try {
     if (latitude && longitude) {
+      // Fetch radius from SystemConfig if radiusInMeter is not provided from frontend
+      const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
+      const radius = Number(radiusConfig?.value ?? 100000)
+      
+      // Use frontend value if provided, otherwise use config value
+      const effectiveRadius = radiusInMeter ?? radius
+
       const locationQuery = {
         ...query,
         'data.infoLokasi.location': {
@@ -104,7 +112,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
               type: 'Point',
               coordinates: [longitude, latitude],
             },
-            $maxDistance: radiusInMeter || 100000,
+            $maxDistance: effectiveRadius,
           },
         },
       }
@@ -113,7 +121,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         ...query,
         'data.infoLokasi.location': {
           $geoWithin: {
-            $centerSphere: [[longitude, latitude], (radiusInMeter || 100000) / 6378100],
+            $centerSphere: [[longitude, latitude], effectiveRadius / 6378100],
           },
         },
       }
