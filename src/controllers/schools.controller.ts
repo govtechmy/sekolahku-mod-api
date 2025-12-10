@@ -79,9 +79,9 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
 
     const response = {
       viewInfoLokasi: {
-        koordinatXX: centerCoordinate[0],
-        koordinatYY: centerCoordinate[1],
-        zoom: 12,
+        koordinatXX: centerCoordinate.center[0],
+        koordinatYY: centerCoordinate.center[1],
+        zoom: centerCoordinate.zoom,
       },
       markerGroups: data.map(item => ({
         markerType: MARKER_GROUP.INDIVIDUAL,
