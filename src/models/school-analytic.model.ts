@@ -31,4 +31,7 @@ const EntitiAnalitikSekolahSchema = new Schema<EntitiAnalitikSekolah>(
   { timestamps: true },
 )
 
-export const EntitiAnalitikSekolahModel = sekolahkuConnection.model<EntitiAnalitikSekolah>('EntitiAnalitikSekolah', EntitiAnalitikSekolahSchema)
+export const EntitiAnalitikSekolahModel = sekolahkuConnection.model<EntitiAnalitikSekolah>(
+  'EntitiAnalitikSekolah',
+  EntitiAnalitikSekolahSchema,
+)

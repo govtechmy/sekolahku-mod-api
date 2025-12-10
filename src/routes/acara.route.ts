@@ -2,7 +2,7 @@ import { authHeaderSchema } from '@schemas'
 import type { FastifyInstance } from 'fastify'
 import { getAcaraById, getAcaraList } from 'src/controllers/acara.controller'
 import { authMiddleware } from 'src/middleware/auth.middleware'
-import { getAcaraByIdParamsSchema, listAcarasQuerySchema, type ListAcarasQuery, type GetAcaraByIdParams } from 'src/schemas/acara'
+import { type GetAcaraByIdParams, getAcaraByIdParamsSchema, type ListAcarasQuery, listAcarasQuerySchema } from 'src/schemas/acara'
 
 export async function registerAcaraRoutes(app: FastifyInstance) {
   app.get<{ Querystring: ListAcarasQuery }>(

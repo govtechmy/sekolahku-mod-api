@@ -1,3 +1,9 @@
+
+### 
+GET http://localhost:3000/schools/find-nearby?name=la%20salle
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+
 ### markerType = GROUP | INDIVIDUAL | NEGERI | PARLIMENT | WEST_EAST | MALAYSIA
 
 

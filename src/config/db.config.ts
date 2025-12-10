@@ -17,7 +17,7 @@ export async function connectToDatabase() {
 
   try {
     await sekolahkuConnection.openUri(env.MONGODB_URI, connectionOptions)
-    
+
     sekolahkuConnection.on('connected', () => console.log('✓ Sekolahku DB connected'))
     sekolahkuConnection.on('error', err => console.error('✗ Sekolahku DB error:', err))
     sekolahkuConnection.on('disconnected', () => console.log('✗ Sekolahku DB disconnected'))
@@ -28,7 +28,7 @@ export async function connectToDatabase() {
 
   try {
     await payloadConnection.openUri(env.MONGODB_URI_PAYLOAD, connectionOptions)
-    
+
     payloadConnection.on('connected', () => console.log('✓ Payload DB connected'))
     payloadConnection.on('error', err => console.error('✗ Payload DB error:', err))
     payloadConnection.on('disconnected', () => console.log('✗ Payload DB disconnected'))
@@ -54,15 +54,11 @@ export async function disconnectFromDatabase() {
   const disconnectPromises: Promise<void>[] = []
 
   if (sekolahkuConnection?.readyState === 1) {
-    disconnectPromises.push(
-      sekolahkuConnection.close()
-    )
+    disconnectPromises.push(sekolahkuConnection.close())
   }
 
   if (payloadConnection?.readyState === 1) {
-    disconnectPromises.push(
-      payloadConnection.close()
-    )
+    disconnectPromises.push(payloadConnection.close())
   }
 
   await Promise.all(disconnectPromises)

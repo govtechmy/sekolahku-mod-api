@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify'
-import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import type { GetNearbySchoolByLocation as GetFindNearby } from 'src/schemas/schools/request.schema'
 import { getNearbySchoolByLocationSchema } from 'src/schemas/schools/request.schema'
 
 import { authHeaderSchema, type ListSchoolsSearchQuery } from '@/schemas'
 import { listSchoolsSearchQuerySchema } from '@/schemas'
 
-import { getNearbySchools, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
+import { getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> {
@@ -52,7 +52,7 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
     getSchoolsSearchSuggestion,
   )
 
-  app.get<{ Querystring: GetNearbySchoolByLocation }>(
+  app.get<{ Querystring: GetFindNearby }>(
     '/schools/find-nearby',
     {
       preHandler: authMiddleware,
@@ -64,6 +64,6 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
         security: [{ 'Sekolahku-X-Api-Key': [] }],
       },
     },
-    getNearbySchools,
+    getFindNearby,
   )
 }

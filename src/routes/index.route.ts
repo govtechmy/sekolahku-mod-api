@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import mongoose from 'mongoose'
 
-import { registerRevalidateRoute } from './revalidate.route'
 import { registerAcaraRoutes } from './acara.route'
+import { registerRevalidateRoute } from './revalidate.route'
 import { registerSchoolRoutes } from './schools.routes'
 import { registerSiaranRoutes } from './siaran.route'
 
