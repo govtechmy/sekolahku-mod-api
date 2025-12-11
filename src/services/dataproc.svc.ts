@@ -1,13 +1,14 @@
 import { env } from '../config/env.config'
 
-const REVALIDATE_PATH = '/revalidate-school-entity'
-
-function buildRevalidateUrl(): string {
-  return new URL(REVALIDATE_PATH, env.DATAPROC_SERVICE_URL).toString()
+function buildRevalidateUrl(servicePath: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(servicePath)) {
+    throw new Error('Invalid servicePath: must only contain letters, numbers, dashes, and underscores')
+  }
+  return new URL(`/${servicePath}`, env.DATAPROC_SERVICE_URL).toString()
 }
 
-export async function revalidateSchoolEntitiesService(): Promise<void> {
-  const endpoint = buildRevalidateUrl()
+export async function revalidateSchoolEntitiesService(servicePath: string): Promise<void> {
+  const endpoint = buildRevalidateUrl(servicePath)
   const response = await fetch(endpoint, { method: 'GET' })
 
   if (!response.ok) {
