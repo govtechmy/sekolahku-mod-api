@@ -1,4 +1,4 @@
-import type { Negeri, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
+import type { NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
   name: string
@@ -192,7 +192,7 @@ export interface Sekolah {
 
 export interface NegeriPolygon {
   /** State name */
-  negeri: Negeri
+  negeri: NEGERI
   /** GeoJSON MultiPolygon for the state */
   geometry: Record<string, unknown>
   /** Optional centroid details */
@@ -203,7 +203,7 @@ export interface NegeriPolygon {
 
 export interface ParlimenPolygon {
   /** State name */
-  negeri: Negeri
+  negeri: NEGERI
   /** Parliament constituency name */
   parlimen: string
   /** GeoJSON MultiPolygon for the parliament area */
