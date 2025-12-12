@@ -237,3 +237,97 @@ export interface ResponseListModel {
   pageNumber: number
   pageSize: number
 }
+
+// Lexical Editor Types for Siaran Content
+export interface LexicalTextNode {
+  detail: number
+  format: number
+  mode: string
+  style: string
+  text: string
+  type: 'text'
+  version: number
+}
+
+export interface LexicalElementNode {
+  children: Array<LexicalTextNode | LexicalElementNode>
+  direction: string | null
+  format: string
+  indent: number
+  type: string
+  version: number
+  textFormat?: number
+  textStyle?: string
+}
+
+export interface LexicalRootNode {
+  children: LexicalElementNode[]
+  direction: string | null
+  format: string
+  indent: number
+  type: 'root'
+  version: number
+}
+
+export interface SiaranContent {
+  root: LexicalRootNode
+}
+
+export interface SiaranAttachment {
+  /** Reference to articles-media document ID */
+  image?: string | null
+  id?: string
+}
+
+export interface Siaran {
+  /** Article title */
+  title: string
+  /** Reference to articles-media document ID */
+  image: string
+  /** Estimated read time in minutes */
+  readTime: number
+  /** Publication date of the article */
+  articleDate: Date
+  /** Array of attachment objects with image references */
+  attachments?: SiaranAttachment[]
+  /** Lexical editor rich text content */
+  content: SiaranContent
+  /** Reference to category document ID */
+  category: string
+  /** UTC timestamp when the document was created */
+  createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+}
+
+// Acara types (same structure as Siaran)
+export interface AcaraContent {
+  root: LexicalRootNode
+}
+
+export interface AcaraAttachment {
+  /** Reference to articles-media document ID */
+  image?: string | null
+  id?: string
+}
+
+export interface Acara {
+  /** Event title */
+  title: string
+  /** Reference to articles-media document ID */
+  image: string
+  /** Estimated read time in minutes */
+  readTime: number
+  /** Event date */
+  articleDate: Date
+  /** Array of attachment objects with image references */
+  attachments?: AcaraAttachment[]
+  /** Lexical editor rich text content */
+  content: AcaraContent
+  /** Reference to category document ID */
+  category: string
+  /** UTC timestamp when the document was created */
+  createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+}

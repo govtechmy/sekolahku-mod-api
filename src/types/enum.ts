@@ -33,3 +33,13 @@ export const NEGERI = [
 ] as const
 
 export type Negeri = (typeof NEGERI)[number]
+
+export enum MARKER_GROUP {
+  GROUP = 'GROUP',
+  INDIVIDUAL = 'INDIVIDUAL',
+  NEGERI = 'NEGERI',
+  PARLIMENT = 'PARLIMENT',
+  WEST_MALAYSIA = 'WEST_MALAYSIA',
+  EAST_MALAYSIA = 'EAST_MALAYSIA',
+  MALAYSIA = 'MALAYSIA',
+}
