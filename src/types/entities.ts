@@ -1,4 +1,4 @@
-import type { RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
+import type { Negeri, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
   name: string
@@ -12,6 +12,15 @@ export interface UserEntity {
 export interface GeoJSONPoint {
   type: number
   coordinates: [number, number]
+}
+
+export interface PolygonCentroid {
+  /** GeoJSON point representing centroid location */
+  location?: GeoJSONPoint | null
+  /** Longitude component of centroid */
+  koordinatXX?: number | null
+  /** Latitude component of centroid */
+  koordinatYY?: number | null
 }
 
 export interface InfoSekolah {
@@ -187,6 +196,30 @@ export interface Sekolah {
   checksum?: string | null
   /** UTC timestamp when the document was last updated */
   updatedAt?: Date
+}
+
+export interface NegeriPolygon {
+  /** State name */
+  negeri: Negeri
+  /** GeoJSON MultiPolygon for the state */
+  geometry: Record<string, unknown>
+  /** Optional centroid details */
+  centroid?: PolygonCentroid | null
+  /** UTC timestamp when the polygon was last updated */
+  updatedAt: Date
+}
+
+export interface ParlimenPolygon {
+  /** State name */
+  negeri: Negeri
+  /** Parliament constituency name */
+  parlimen: string
+  /** GeoJSON MultiPolygon for the parliament area */
+  geometry: Record<string, unknown>
+  /** Optional centroid details */
+  centroid?: PolygonCentroid | null
+  /** UTC timestamp when the polygon was last updated */
+  updatedAt: Date
 }
 export interface ResponseModel {
   status: RESPONSE_STATUS
