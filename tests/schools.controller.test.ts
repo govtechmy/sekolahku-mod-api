@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 
 import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
-import { EntitiSekolahModel } from '../src/models/school.model'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
 
 describe('schools controller', () => {

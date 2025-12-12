@@ -10,7 +10,7 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 
 import type { CreateSchoolBody } from '@/schemas'
 
-import { EntitiSekolahModel } from '../models/school.model'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
