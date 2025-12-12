@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 
-import {
-  createSchool,
-  getNearbySchools,
-  getSchoolById,
-  getSchoolsSearchSuggestion,
-  listSchools,
-} from '../src/controllers/schools.controller'
+import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
 
@@ -142,7 +136,7 @@ describe('schools controller', () => {
     })
   })
 
-  describe('getNearbySchools', () => {
+  describe('getFindNearby', () => {
     test('should return nearby schools', async () => {
       const mockSchools = [
         {
@@ -162,7 +156,7 @@ describe('schools controller', () => {
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(EntitiSekolahModel.find).toHaveBeenCalledWith({
         'data.infoLokasi.location': {
@@ -194,7 +188,7 @@ describe('schools controller', () => {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
@@ -216,7 +210,7 @@ describe('schools controller', () => {
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(mockReply.code).toHaveBeenCalledWith(500)
       expect(mockReply.send).toHaveBeenCalledWith({
@@ -278,6 +272,27 @@ describe('schools controller', () => {
 
       const mockReq = {
         query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalled()
+      expect(EntitiSekolahModel.find).toHaveBeenCalled()
+      expect(mockReply.send).toHaveBeenCalled()
+    })
+
+    test('should return search results with location', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
+      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(mockSchools)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000, negeri: 'something' },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)

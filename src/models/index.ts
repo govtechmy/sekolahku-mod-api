@@ -1,3 +1,5 @@
-export * from './school.model'
-export * from './school-analytic.model'
+export * from './acara.model'
+export * from './sekolah.model'
+export * from './entiti-analitik-sekolah.model'
+export * from './siaran.model'
 export * from './user.model'

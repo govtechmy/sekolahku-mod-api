@@ -1,0 +1,8 @@
+GET http://localhost:3000/siaran
+Content-Type: application/json
+Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
+
+### Get Siaran By ID
+GET http://localhost:3000/siaran/692ea2ce0bc6882a56cd116b
+Content-Type: application/json
+Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
