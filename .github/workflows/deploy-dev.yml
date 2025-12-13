@@ -25,6 +25,12 @@ jobs:
 
       - name: Run tests with coverage
         run: bun run test:coverage
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          MONGODB_URI_PAYLOAD: mongodb://localhost:27017/test-payload
+          API_KEY: test-api-key
+          DATAPROC_SERVICE_URL: http://localhost:8080
+          DATA_URL: http://localhost:3000
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
