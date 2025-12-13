@@ -1,8 +1,8 @@
 export {
-  type RevalidateRequest,
-  revalidateRequestSchema,
   type RevalidateParams,
   revalidateParamsSchema,
+  type RevalidateRequest,
+  revalidateRequestSchema,
   type RevalidateResponse,
   revalidateResponseSchema,
 } from './request.schema'

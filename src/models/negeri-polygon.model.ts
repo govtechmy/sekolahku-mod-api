@@ -1,5 +1,6 @@
 import type { GeoJSONPoint, NegeriPolygon, PolygonCentroid } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+import { sekolahkuConnection } from 'src/config/db.config'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {
@@ -28,4 +29,4 @@ const NegeriPolygonSchema = new Schema<NegeriPolygon>(
   { timestamps: false },
 )
 
-export const NegeriPolygonModel = model<NegeriPolygon>('NegeriPolygon', NegeriPolygonSchema, 'NegeriPolygon')
+export const NegeriPolygonModel = sekolahkuConnection.model<NegeriPolygon>('NegeriPolygon', NegeriPolygonSchema, 'NegeriPolygon')

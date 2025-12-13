@@ -1,22 +1,15 @@
-import type {
-  EntitiSekolah,
-  EntitiSekolahData,
-  InfoKomunikasi,
-  InfoLokasi,
-  InfoPentadbiran,
-  InfoSekolah,
-  GeoJSONPoint,
-} from '@types'
+import type { EntitiSekolah, EntitiSekolahData, GeoJSONPoint, InfoKomunikasi, InfoLokasi, InfoPentadbiran, InfoSekolah } from '@types'
 import { SEKOLAH_STATUS } from '@types'
-import { model, Schema } from 'mongoose'
-  
+import { Schema } from 'mongoose'
+import { sekolahkuConnection } from 'src/config/db.config'
+
 const InfoSekolahSchema = new Schema<InfoSekolah>(
   {
     jenisLabel: { type: String, default: null },
     jumlahPelajar: { type: Number, default: 0 },
     jumlahGuru: { type: Number, default: 0 },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const InfoKomunikasiSchema = new Schema<InfoKomunikasi>(
@@ -28,7 +21,7 @@ const InfoKomunikasiSchema = new Schema<InfoKomunikasi>(
     poskodSurat: { type: String, default: null },
     bandarSurat: { type: String, default: null },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const InfoPentadbiranSchema = new Schema<InfoPentadbiran>(
@@ -42,7 +35,7 @@ const InfoPentadbiranSchema = new Schema<InfoPentadbiran>(
     prasekolah: { type: Boolean, default: null },
     integrasi: { type: Boolean, default: null },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
@@ -54,7 +47,7 @@ const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
     },
     coordinates: { type: [Number], required: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const InfoLokasiSchema = new Schema<InfoLokasi>(
@@ -63,7 +56,7 @@ const InfoLokasiSchema = new Schema<InfoLokasi>(
     koordinatYY: { type: Number, default: null },
     location: { type: GeoJSONPointSchema, default: null },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const EntitiSekolahDataSchema = new Schema<EntitiSekolahData>(
@@ -73,7 +66,7 @@ const EntitiSekolahDataSchema = new Schema<EntitiSekolahData>(
     infoPentadbiran: { type: InfoPentadbiranSchema, required: true },
     infoLokasi: { type: InfoLokasiSchema, required: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const EntitiSekolahSchema = new Schema<EntitiSekolah>(
@@ -84,16 +77,12 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: false, versionKey: false }
+  { timestamps: false, versionKey: false },
 )
 
 // Correct geospatial index
 EntitiSekolahSchema.index({
-  'data.infoLokasi.location': '2dsphere'
+  'data.infoLokasi.location': '2dsphere',
 })
 
-export const EntitiSekolahModel = model<EntitiSekolah>(
-  'EntitiSekolah',
-  EntitiSekolahSchema,
-  'EntitiSekolah'
-)
+export const EntitiSekolahModel = sekolahkuConnection.model<EntitiSekolah>('EntitiSekolah', EntitiSekolahSchema, 'EntitiSekolah')

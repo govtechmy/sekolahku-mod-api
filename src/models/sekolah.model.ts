@@ -1,6 +1,7 @@
 import type { Sekolah } from '@types'
 import { NEGERI, SEKOLAH_STATUS } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+import { sekolahkuConnection } from 'src/config/db.config'
 
 const SekolahSchema = new Schema<Sekolah>(
   {
@@ -43,9 +44,9 @@ const SekolahSchema = new Schema<Sekolah>(
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },
     checksum: { type: String, default: null },
 
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: false, versionKey: false }
+  { timestamps: false, versionKey: false },
 )
 
 SekolahSchema.index({ negeri: 1 })
@@ -54,4 +55,4 @@ SekolahSchema.index({ jenisLabel: 1 })
 SekolahSchema.index({ peringkat: 1 })
 SekolahSchema.index({ location: '2dsphere' })
 
-export const SekolahModel = model<Sekolah>('Sekolah', SekolahSchema, 'Sekolah')
+export const SekolahModel = sekolahkuConnection.model<Sekolah>('Sekolah', SekolahSchema, 'Sekolah')

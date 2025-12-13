@@ -1,5 +1,6 @@
 import type { GeoJSONPoint, ParlimenPolygon, PolygonCentroid } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+import { sekolahkuConnection } from 'src/config/db.config'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {
@@ -29,4 +30,4 @@ const ParlimenPolygonSchema = new Schema<ParlimenPolygon>(
   { timestamps: false },
 )
 
-export const ParlimenPolygonModel = model<ParlimenPolygon>('ParlimenPolygon', ParlimenPolygonSchema, 'ParlimenPolygon')
+export const ParlimenPolygonModel = sekolahkuConnection.model<ParlimenPolygon>('ParlimenPolygon', ParlimenPolygonSchema, 'ParlimenPolygon')

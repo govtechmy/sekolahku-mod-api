@@ -1,6 +1,7 @@
 import { MARKER_GROUP } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { env } from 'src/config/env.config'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
 import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
@@ -9,8 +10,6 @@ import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
-
-import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {

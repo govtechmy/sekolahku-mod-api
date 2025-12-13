@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const revalidateRequestSchema = z.object({})
 
 export const revalidateParamsSchema = z.object({
-  servicePath: z.string().min(1, 'Service path is required')
+  servicePath: z.string().min(1, 'Service path is required'),
 })
 
 export const revalidateResponseSchema = z.object({
