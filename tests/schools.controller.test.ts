@@ -204,7 +204,7 @@ describe('schools controller', () => {
                   koordinatXX: 101.508713,
                   koordinatYY: 3.088043,
                 },
-                dataUrl: 'http://localhost/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
+                dataUrl: 'http://localhost:3000/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
               },
             ],
           },
