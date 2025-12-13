@@ -20,6 +20,9 @@ jobs:
         with:
           bun-version: latest  # or specify a version like '1.1.10'
 
+      - name: Run tests with coverage
+        run: bun run test:coverage
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

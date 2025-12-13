@@ -19,6 +19,16 @@ describe('schools controller', () => {
   let mockQueryOne: MockQueryOneType
 
   beforeEach(() => {
+    // Mock DB connection to prevent actual DB calls
+    mock.module('../src/config/db.config', () => ({
+      payloadConnection: {
+        model: mock(() => ({})),
+      },
+      sekolahkuConnection: {
+        model: mock(() => ({})),
+      },
+    }))
+
     mockQuery = {
       lean: mock(() => Promise.resolve([])),
       skip: mock(() => mockQuery),
@@ -138,13 +148,21 @@ describe('schools controller', () => {
 
   describe('getFindNearby', () => {
     test('should return nearby schools', async () => {
-      const mockSchools = [
-        {
-          kodSekolah: '001',
-          data: { infoLokasi: { location: { coordinates: [101.5, 3.1] } } },
+      const mockSchool = {
+        kodSekolah: 'BBA8238',
+        data: {
+          infoLokasi: {
+            location: {
+              coordinates: [101.508713, 3.088043],
+            },
+          },
+          infoPentadbiran: {
+            negeri: 'SELANGOR',
+            parlimen: 'SHAH_ALAM',
+          },
         },
-      ]
-      mockQuery.lean.mockResolvedValue(mockSchools)
+      }
+      mockQuery.lean.mockResolvedValue([mockSchool])
 
       const mockReply = {
         send: mock(() => ({})),
@@ -152,7 +170,7 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+        query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 10000 },
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
@@ -165,19 +183,42 @@ describe('schools controller', () => {
               type: 'Point',
               coordinates: [101.5, 3.1],
             },
-            $maxDistance: 1000,
+            $maxDistance: 10000,
           },
         },
       })
+      const expectedResponse = {
+        viewInfoLokasi: {
+          koordinatXX: 101.508713,
+          koordinatYY: 3.088043,
+          zoom: 20,
+        },
+        markerGroups: [
+          {
+            markerType: 'INDIVIDUAL',
+            radiusInMeter: 0,
+            items: [
+              {
+                kodSekolah: 'BBA8238',
+                infoLokasi: {
+                  koordinatXX: 101.508713,
+                  koordinatYY: 3.088043,
+                },
+                dataUrl: 'http://localhost/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
+              },
+            ],
+          },
+        ],
+      }
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: [{ kodSekolah: '001', location: [101.5, 3.1] }],
+        data: expectedResponse,
       })
     })
 
     test('should return empty array if no schools found', async () => {
-      mockQuery.lean.mockResolvedValue([])
+      mockQuery.lean.mockResolvedValue({})
 
       const mockReply = {
         send: mock(() => ({})),

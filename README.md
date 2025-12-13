@@ -5,17 +5,19 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
 
-Lightweight Fastify + Bun backend for the Sekolahku dataset ingestion project. The service exposes Auth + School management APIs with JWT auth, Zod schemas, Swagger docs, and MongoDB persistence.
+Lightweight Fastify + Bun backend for the Sekolahku dataset ingestion project. The service exposes API key authenticated endpoints for school management, events (acara), broadcasts (siaran), and data revalidation, with Zod schemas, Swagger docs, and MongoDB persistence.
 
 ## 🚀 Features
 
 - **Fastify on Bun** for high throughput and low overhead.
 - **Type-safe endpoints** powered by TypeScript + Zod schemas.
-- **JWT Authentication** with access/refresh tokens and role guards.
 - **School catalog CRUD** backed by MongoDB/Mongoose.
+- **Events (Acara) and Broadcasts (Siaran) management**.
+- **Data revalidation** for dynamic dataproc jobs.
 - **Plugin-driven app startup** (security headers, CORS, Swagger, request logging).
 - **Structured logging** with Pino and environment-aware formatting.
 - **Auto-generated API docs** via Swagger UI.
+- **API key authentication** for secure access.
 
 ## 📋 Prerequisites
 
@@ -31,6 +33,11 @@ cd sekolahku-mod-api
 bun install
 ```
 
+## 📊 Data
+
+The project includes school data from the Malaysian Ministry of Education:
+- `SenaraiSekolahWeb_Julai2025 - SenaraiSekolahWeb.csv` – Comprehensive list of schools in Malaysia (July 2025)
+
 ## ⚙️ Configuration
 
 Create a `.env` file matching `src/config/env.config.ts` expectations:
@@ -40,9 +47,7 @@ APP_ENV=development           # development | production | test | local
 LOG_LEVEL=debug               # overrides default per env
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/sekolahku
-JWT_SECRET=change_me
-REFRESH_TOKEN_SECRET=change_me_too
-FRONTEND_ORIGIN=http://localhost:5173 # required only in production
+API_KEY=your-secret-api-key   # required for authentication
 ```
 
 | Variable | Required | Default | Description |
@@ -51,9 +56,7 @@ FRONTEND_ORIGIN=http://localhost:5173 # required only in production
 | `LOG_LEVEL` | No | `debug`/`info` | Pino log level |
 | `PORT` | No | `3000` | Fastify listen port |
 | `MONGODB_URI` | Yes | – | MongoDB connection string |
-| `JWT_SECRET` | Yes | – | Access token signing secret |
-| `REFRESH_TOKEN_SECRET` | Yes | – | Refresh token signing secret |
-| `FRONTEND_ORIGIN` | Yes (prod) | – | Allowed CORS origin |
+| `API_KEY` | Yes | – | API key for authentication |
 
 ## 🔧 Scripts
 
@@ -62,25 +65,34 @@ bun run dev         # watch mode server
 bun run start       # production start
 bun run typecheck   # tsc --noEmit
 bun run lint        # eslint . --ext .ts
-bun run seed        # seed MongoDB with sample accounts
+bun run lint-fix    # eslint . --ext .ts --fix
+bun run test        # run tests
+bun run test:coverage # run tests with coverage
 ```
 
 ## 📡 API Overview
 
-### Health
+### System
 - `GET /health` – Liveness + Mongo connection status
 
-### Auth
-- `POST /auth/login` – username/password login
-- `POST /auth/refresh` – refresh access token
-- `POST /auth/logout` – invalidate session client-side
-
 ### Schools (protected)
-- `GET /schools` – list schools (requires `Authorization: Bearer`)
-- `POST /schools` – create school record
-- `GET /schools/:id` – fetch single school
+- `GET /schools` – List schools (requires `sekolahku-x-api-key` header)
+- `GET /schools/:id` – Fetch single school
+- `GET /schools/search` – Get schools search suggestions
+- `GET /schools/find-nearby` – Get nearby schools by location and radius
 
-All protected routes expect `Authorization: Bearer <token>` and validate request/response via Zod schemas.
+### Acara (Events, protected)
+- `GET /acara` – List all events
+- `GET /acara/:id` – Get event by ID
+
+### Siaran (Broadcasts, protected)
+- `GET /siaran` – List all broadcasts
+- `GET /siaran/:id` – Get broadcast by ID
+
+### Revalidate (protected)
+- `GET /revalidate/:servicePath` – Trigger dynamic dataproc revalidation job
+
+All protected routes require the `sekolahku-x-api-key` header with a valid API key.
 
 ## 🐳 Docker
 
@@ -94,9 +106,8 @@ docker build -t sekolahku-mod-api .
 docker run --rm -p 3000:3000 \
   -e APP_ENV=development \
   -e PORT=3000 \
+  -e API_KEY=your-secret-api-key \
   -e MONGODB_URI="mongodb://host.docker.internal:27017/sekolahku" \
-  -e JWT_SECRET="dev_jwt_secret" \
-  -e REFRESH_TOKEN_SECRET="dev_refresh_secret" \
   sekolahku-mod-api
 ```
 
@@ -105,16 +116,15 @@ docker run --rm -p 3000:3000 \
 docker run --rm -p 3000:3000 \
   -e APP_ENV=production \
   -e PORT=3000 \
+  -e API_KEY=your-secret-api-key \
   -e MONGODB_URI="mongodb://mongo/prod" \
-  -e JWT_SECRET="super_secret" \
-  -e REFRESH_TOKEN_SECRET="super_refresh_secret" \
-  -e FRONTEND_ORIGIN="https://app.sekolahku.gov.my" \
+  -e MULTIPLE_ORIGINS="https://app.sekolahku.gov.my,https://admin.sekolahku.gov.my" \
   sekolahku-mod-api
 ```
 
 Notes:
 - Service listens on `0.0.0.0`.
-- `FRONTEND_ORIGIN` must be set when `APP_ENV=production`.
+- `MULTIPLE_ORIGINS` must be set when `APP_ENV=production`.
 
 ## 🧱 Project Structure
 
@@ -127,10 +137,22 @@ src/
   controllers/   # request handlers
   routes/        # Fastify route registrations
   models/        # Mongoose models
-  scripts/       # maintenance scripts (seed)
+  services/      # business logic services (dataproc, geometry, secrets-manager)
+  types/         # TypeScript type definitions
+  utils/         # utility functions
+  scripts/       # maintenance scripts
 ```
 
-## 🤝 Contributing
+## � Testing
+
+```bash
+bun run test              # run all tests
+bun run test:coverage     # run tests with coverage report
+```
+
+Test files are located in the `tests/` directory, including HTTP request tests (`.http` files) and unit tests (`.test.ts` files).
+
+## �🤝 Contributing
 
 1. Fork & create feature branch (`git checkout -b feature/xyz`)
 2. Commit with lint + typecheck passing

@@ -1,3 +1,6 @@
+### 
+GET http://localhost:3000/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
 GET http://localhost:3000/schools/find-nearby?name=la%20salle
