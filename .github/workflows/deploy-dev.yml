@@ -21,7 +21,7 @@ jobs:
           bun-version: latest  # or specify a version like '1.1.10'
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Run tests with coverage
         run: bun run test:coverage
