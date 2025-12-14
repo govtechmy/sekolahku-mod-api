@@ -4,17 +4,9 @@ import { AcaraModel } from 'src/models/acara.model'
 
 import { getAcaraById, getAcaraList } from '../src/controllers/acara.controller'
 import type { GetAcaraByIdParams, ListAcarasQuery } from '../src/schemas/acara'
+import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
 describe('acara controller', () => {
-  type MockQueryType = {
-    lean: ReturnType<typeof mock>
-    skip: ReturnType<typeof mock>
-    limit: ReturnType<typeof mock>
-    sort: ReturnType<typeof mock>
-  }
-
-  let mockQuery: MockQueryType
-
   beforeEach(() => {
     // Mock DB connection to prevent actual DB calls
     mock.module('../src/config/db.config', () => ({
@@ -23,24 +15,17 @@ describe('acara controller', () => {
       },
     }))
 
-    mockQuery = {
-      lean: mock(() => Promise.resolve([])),
-      skip: mock(() => mockQuery),
-      limit: mock(() => mockQuery),
-      sort: mock(() => mockQuery),
-    }
-    ;(AcaraModel.find as unknown) = mock(() => mockQuery)
-    ;(AcaraModel.findById as unknown) = mock(() => ({
-      lean: mock(() => Promise.resolve(null)),
-    }))
-    ;(AcaraModel.countDocuments as unknown) = mock(() => Promise.resolve(0))
+    AcaraModel.find = mockedModel.find
+    AcaraModel.findById = mockedModel.findOne
+    AcaraModel.findOne = mockedModel.findOne
+    AcaraModel.create = mockedModel.create
+    AcaraModel.countDocuments = mockedModel.countDocuments
   })
 
   describe('getAcaraList', () => {
     test('should return list of acaras', async () => {
       const mockAcaras = [{ title: 'Test Acara', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockAcaras)
-      ;(AcaraModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
 
       const mockReply = {
         send: mock(() => ({})),
@@ -68,7 +53,6 @@ describe('acara controller', () => {
     test('should filter by search', async () => {
       const mockAcaras = [{ title: 'Test Acara', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockAcaras)
-      ;(AcaraModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
 
       const mockReply = {
         send: mock(() => ({})),
@@ -96,7 +80,6 @@ describe('acara controller', () => {
     test('should filter by category', async () => {
       const mockAcaras = [{ title: 'Test Acara', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockAcaras)
-      ;(AcaraModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
 
       const mockReply = {
         send: mock(() => ({})),
@@ -125,16 +108,14 @@ describe('acara controller', () => {
   describe('getAcaraById', () => {
     test('should return acara if found', async () => {
       const mockAcara = { title: 'Test Acara', category: 'news' }
-      ;(AcaraModel.findById as ReturnType<typeof mock>).mockReturnValue({
-        lean: mock(() => Promise.resolve(mockAcara)),
-      })
-
+      mockQueryOne.lean.mockResolvedValue(mockAcara)
       const mockReply = {
         send: mock(() => ({})),
       } as unknown as FastifyReply
 
       const mockReq = {
         params: { id: '507f1f77bcf86cd799439011' },
+        log: { warn: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Params: GetAcaraByIdParams }>
 
       await getAcaraById(mockReq, mockReply)
@@ -198,10 +179,7 @@ describe('acara controller', () => {
     })
 
     test('should return 404 if acara not found', async () => {
-      ;(AcaraModel.findById as ReturnType<typeof mock>).mockReturnValue({
-        lean: mock(() => Promise.resolve(null)),
-      })
-
+      mockQueryOne.lean.mockResolvedValue(null)
       const mockReply = {
         code: mock(() => mockReply),
         send: mock(() => ({})),

@@ -4,20 +4,9 @@ import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 
 import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
+import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
 describe('schools controller', () => {
-  type MockQueryType = {
-    lean: ReturnType<typeof mock>
-    skip: ReturnType<typeof mock>
-    limit: ReturnType<typeof mock>
-  }
-  type MockQueryOneType = {
-    lean: ReturnType<typeof mock>
-  }
-
-  let mockQuery: MockQueryType
-  let mockQueryOne: MockQueryOneType
-
   beforeEach(() => {
     // Mock DB connection to prevent actual DB calls
     mock.module('../src/config/db.config', () => ({
@@ -29,19 +18,12 @@ describe('schools controller', () => {
       },
     }))
 
-    mockQuery = {
-      lean: mock(() => Promise.resolve([])),
-      skip: mock(() => mockQuery),
-      limit: mock(() => mockQuery),
-    }
-    mockQueryOne = {
-      lean: mock(() => Promise.resolve(null)),
-    }
-    ;(EntitiSekolahModel.find as unknown) = mock(() => mockQuery)
-    ;(EntitiSekolahModel.findOne as unknown) = mock(() => mockQueryOne)
-    ;(EntitiSekolahModel.create as unknown) = mock(() => Promise.resolve({}))
-    ;(EntitiSekolahModel.countDocuments as unknown) = mock(() => Promise.resolve(0))
+    EntitiSekolahModel.find = mockedModel.find
+    EntitiSekolahModel.findOne = mockedModel.findOne
+    EntitiSekolahModel.create = mockedModel.create
+    EntitiSekolahModel.countDocuments = mockedModel.countDocuments
   })
+
   describe('listSchools', () => {
     test('should return list of schools', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
@@ -69,7 +51,7 @@ describe('schools controller', () => {
     test('should create a school and return 201', async () => {
       const mockBody: CreateSchoolBody = { kodSekolah: '001', namaSekolah: 'New School' } as CreateSchoolBody
       const mockCreated = { ...mockBody, _id: '123' }
-      ;(EntitiSekolahModel.create as ReturnType<typeof mock>).mockResolvedValue(mockCreated)
+      mockedModel.create.mockResolvedValue(mockCreated)
 
       const mockReply = {
         code: mock(() => mockReply),
@@ -270,8 +252,9 @@ describe('schools controller', () => {
   describe('getSchoolsSearchSuggestion', () => {
     test('should return search results without location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
@@ -303,7 +286,7 @@ describe('schools controller', () => {
 
     test('should return search results with location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
 
       const mockReply = {
@@ -324,7 +307,7 @@ describe('schools controller', () => {
 
     test('should return search results with location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
 
       const mockReply = {
@@ -344,7 +327,7 @@ describe('schools controller', () => {
     })
 
     test('should handle error', async () => {
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockRejectedValue(new Error('DB error'))
+      mockQuery.lean.mockRejectedValue(new Error('DB error'))
 
       const mockReply = {
         code: mock(() => mockReply),

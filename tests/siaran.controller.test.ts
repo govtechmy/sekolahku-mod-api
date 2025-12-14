@@ -4,17 +4,9 @@ import { SiaranModel } from 'src/models/siaran.model'
 
 import { getSiaranById, getSiaranList } from '../src/controllers/siaran.controller'
 import type { GetSiaranByIdParams, ListSiaransQuery } from '../src/schemas/siaran'
+import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
 describe('siaran controller', () => {
-  type MockQueryType = {
-    lean: ReturnType<typeof mock>
-    skip: ReturnType<typeof mock>
-    limit: ReturnType<typeof mock>
-    sort: ReturnType<typeof mock>
-  }
-
-  let mockQuery: MockQueryType
-
   beforeEach(() => {
     // Mock DB connection to prevent actual DB calls
     mock.module('../src/config/db.config', () => ({
@@ -23,24 +15,20 @@ describe('siaran controller', () => {
       },
     }))
 
-    mockQuery = {
-      lean: mock(() => Promise.resolve([])),
-      skip: mock(() => mockQuery),
-      limit: mock(() => mockQuery),
-      sort: mock(() => mockQuery),
-    }
-    ;(SiaranModel.find as unknown) = mock(() => mockQuery)
-    ;(SiaranModel.findById as unknown) = mock(() => ({
-      lean: mock(() => Promise.resolve(null)),
-    }))
-    ;(SiaranModel.countDocuments as unknown) = mock(() => Promise.resolve(0))
+    SiaranModel.find = mockedModel.find
+    SiaranModel.findById = mockedModel.findOne
+    SiaranModel.countDocuments = mockedModel.countDocuments
+
+    // Reset mocks to default behavior
+    mockQuery.lean = mock(() => Promise.resolve([]))
+    mockQueryOne.lean = mock(() => Promise.resolve(null))
   })
 
   describe('getSiaranList', () => {
     test('should return list of siarans', async () => {
       const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
-      ;(SiaranModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
@@ -68,7 +56,7 @@ describe('siaran controller', () => {
     test('should filter by search', async () => {
       const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
-      ;(SiaranModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
@@ -96,7 +84,7 @@ describe('siaran controller', () => {
     test('should filter by category', async () => {
       const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
-      ;(SiaranModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
@@ -125,17 +113,18 @@ describe('siaran controller', () => {
   describe('getSiaranById', () => {
     test('should return siaran if found', async () => {
       const mockSiaran = { title: 'Test Siaran', category: 'news' }
-      ;(SiaranModel.findById as ReturnType<typeof mock>).mockReturnValue({
-        lean: mock(() => Promise.resolve(mockSiaran)),
-      })
-
       const mockReply = {
         send: mock(() => ({})),
+        code: mock(() => ({
+          send: mock(() => ({})),
+        })),
       } as unknown as FastifyReply
-
       const mockReq = {
         params: { id: '507f1f77bcf86cd799439011' },
+        log: { warn: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
+
+      mockQueryOne.lean.mockResolvedValue(mockSiaran)
 
       await getSiaranById(mockReq, mockReply)
 
@@ -198,10 +187,6 @@ describe('siaran controller', () => {
     })
 
     test('should return 404 if siaran not found', async () => {
-      ;(SiaranModel.findById as ReturnType<typeof mock>).mockReturnValue({
-        lean: mock(() => Promise.resolve(null)),
-      })
-
       const mockReply = {
         code: mock(() => mockReply),
         send: mock(() => ({})),

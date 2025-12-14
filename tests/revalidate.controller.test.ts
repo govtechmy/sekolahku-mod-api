@@ -29,7 +29,8 @@ describe('revalidate controller', () => {
 
     test('should handle service error', async () => {
       const { revalidateSchoolEntitiesService } = await import('../src/services/dataproc.svc')
-      ;(revalidateSchoolEntitiesService as ReturnType<typeof mock>).mockRejectedValue(new Error('Service error'))
+      const mockedService = revalidateSchoolEntitiesService as ReturnType<typeof mock>
+      mockedService.mockRejectedValue(new Error('Service error'))
 
       const mockReply = {
         code: mock(() => mockReply),

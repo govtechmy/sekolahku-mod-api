@@ -1,0 +1,3 @@
+bun lint:fix
+bun typecheck 
+bun test:coverage
