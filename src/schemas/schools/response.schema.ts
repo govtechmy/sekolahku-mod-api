@@ -16,6 +16,9 @@ const MarkerItemSchema = z.object({
 const MarkerGroupItemSchema = MarkerItemSchema.extend({
   markerType: z.enum(MARKER_GROUP).optional(),
   radiusInMeter: z.number().optional(),
+  negeri: z.string().optional(),
+  parlimen: z.string().optional(),
+  total: z.number().optional(),
   items: z.array(MarkerItemSchema).optional(),
 })
 
