@@ -2,7 +2,7 @@ import { type EntitiSekolah, MARKER_GROUP } from '@types'
 
 export function groupingFromRadius(radius: number): MARKER_GROUP {
   if (radius >= 150_000) return MARKER_GROUP.NEGERI
-  if (radius >= 50_000) return MARKER_GROUP.PARLIMENT
+  if (radius >= 50_000) return MARKER_GROUP.PARLIMEN
   return MARKER_GROUP.INDIVIDUAL
 }
 

@@ -133,7 +133,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       return reply.send(createSuccessResponse(response))
     }
 
-    if (grouping === MARKER_GROUP.PARLIMENT) {
+    if (grouping === MARKER_GROUP.PARLIMEN) {
       const parlimenGroups = new Map<string, { negeri: string; parlimen: string }>()
       const parlimenTotalsMap = new Map<string, number>()
       schoolsWithinRadius.forEach(school => {
@@ -159,7 +159,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
         const total = parlimenTotalsMap.get(group.parlimen)
 
         return {
-          markerType: MARKER_GROUP.PARLIMENT,
+          markerType: MARKER_GROUP.PARLIMEN,
           negeri: group.negeri,
           parlimen: group.parlimen,
           infoLokasi: {
@@ -286,7 +286,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       const total = parlimenTotalsMap.get(group.parlimen)
 
       return {
-        markerType: MARKER_GROUP.PARLIMENT,
+        markerType: MARKER_GROUP.PARLIMEN,
         negeri: group.negeri,
         parlimen: group.parlimen,
         infoLokasi: {
