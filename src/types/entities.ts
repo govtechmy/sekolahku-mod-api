@@ -323,3 +323,10 @@ export interface Acara {
   /** UTC timestamp when the document was last updated */
   updatedAt: Date
 }
+
+export interface SystemConfig {
+  key: string
+  value: unknown
+  description?: string
+  updatedAt: Date
+}
