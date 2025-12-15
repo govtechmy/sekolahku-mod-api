@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
+import { SystemConfigModel } from 'src/models/system-config.model'
 
 import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
@@ -18,10 +19,18 @@ describe('schools controller', () => {
       },
     }))
 
+    // Mock geometry service
+    mock.module('../src/services/geometry.svc', () => ({
+      returnWithinRadius: mock(schools => schools),
+      calculateLocationCenter: mock(() => ({ center: [101.5, 3.1], zoom: 20 })),
+    }))
+
     EntitiSekolahModel.find = mockedModel.find
     EntitiSekolahModel.findOne = mockedModel.findOne
     EntitiSekolahModel.create = mockedModel.create
     EntitiSekolahModel.countDocuments = mockedModel.countDocuments
+
+    SystemConfigModel.findOne = mock(() => Promise.resolve({ value: '10000' })) as unknown as typeof SystemConfigModel.findOne
   })
 
   describe('listSchools', () => {
@@ -171,24 +180,19 @@ describe('schools controller', () => {
       })
       const expectedResponse = {
         viewInfoLokasi: {
-          koordinatXX: 101.508713,
-          koordinatYY: 3.088043,
-          zoom: 20,
+          koordinatXX: 101.5,
+          koordinatYY: 3.1,
+          zoom: 10000,
         },
         markerGroups: [
           {
             markerType: 'INDIVIDUAL',
-            radiusInMeter: 0,
-            items: [
-              {
-                kodSekolah: 'BBA8238',
-                infoLokasi: {
-                  koordinatXX: 101.508713,
-                  koordinatYY: 3.088043,
-                },
-                dataUrl: 'http://localhost:3000/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
-              },
-            ],
+            infoLokasi: {
+              koordinatXX: 101.508713,
+              koordinatYY: 3.088043,
+            },
+            kodSekolah: 'BBA8238',
+            dataUrl: 'http://localhost:3000/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
           },
         ],
       }

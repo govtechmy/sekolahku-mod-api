@@ -42,7 +42,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, radiusInMeter = 100000, name } = req.query
+  const { latitude, longitude, radiusInMeter, name } = req.query
 
   if (longitude === undefined || latitude === undefined || radiusInMeter === undefined) {
     const errResponse = createErrorResponse('latitude, longitude, and radiusInMeter are required', 'ERR_400', 400)
@@ -56,17 +56,16 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
   }
 
   const grouping = groupingFromRadius(radiusInMeter)
-
-  // const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
-  // const radius = Number(radiusConfig?.value ?? 100000)
-  // const effectiveRadius = radiusInMeter ?? radius
+  const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
+  const radius = Number(radiusConfig?.value ?? 100000)
+  const effectiveRadius = radiusInMeter ?? radius
 
   if (name) {
     const query = {
       namaSekolah: { $regex: escapeStringRegex(name), $options: 'i' },
     }
     const foundSchools = await EntitiSekolahModel.find(query).lean<EntitiSekolah[]>()
-    const schoolsWithinRadius = returnWithinRadius(foundSchools, longitude, latitude, radiusInMeter)
+    const schoolsWithinRadius = returnWithinRadius(foundSchools, longitude, latitude, effectiveRadius)
 
     if (!Array.isArray(schoolsWithinRadius) || schoolsWithinRadius.length === 0) {
       return reply.send(createSuccessResponse([]))
@@ -83,7 +82,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
         }
       })
 
-      const centerLocation = calculateLocationCenter(schoolsWithinRadius.map(school => school.data.infoLokasi.location?.coordinates))
+      const centerLocation = calculateLocationCenter(foundSchools.map(school => school.data.infoLokasi.location?.coordinates))
       const response = {
         viewInfoLokasi: {
           koordinatXX: centerLocation.center[0],
