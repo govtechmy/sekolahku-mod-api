@@ -9,6 +9,8 @@ import { EntitiSekolahModel } from '../models/school.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
+const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
+
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
   const schools = await EntitiSekolahModel.find().lean()
   return reply.send(createSuccessResponse(schools))
@@ -121,7 +123,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         ...query,
         'data.infoLokasi.location': {
           $geoWithin: {
-            $centerSphere: [[longitude, latitude], effectiveRadius / 6378100],
+            $centerSphere: [[longitude, latitude], effectiveRadius / EARTH_RADIUS_IN_METERS],
           },
         },
       }

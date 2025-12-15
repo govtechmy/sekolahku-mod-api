@@ -207,7 +207,7 @@ export interface ResponseListModel {
 
 export interface SystemConfig {
   key: string
-  value: React.SetStateAction<string | unknown>
+  value: unknown
   description?: string
   updatedAt: Date
 }
