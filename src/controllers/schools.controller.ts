@@ -1,4 +1,4 @@
-import { type EntitiSekolah, MARKER_GROUP } from '@types'
+import { type EntitiSekolah, MARKER_GROUP, type PolygonCentroid } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { env } from 'src/config/env.config'
 import type { GetNearbySchoolByLocation, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
@@ -38,7 +38,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, radiusInMeter, name } = req.query
+  const { latitude, longitude, radiusInMeter } = req.query
 
   if (longitude === undefined || latitude === undefined || radiusInMeter === undefined) {
     const errResponse = createErrorResponse('latitude, longitude, and radiusInMeter are required', 'ERR_400', 400)
@@ -72,7 +72,6 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       return reply.send(createSuccessResponse([]))
     }
 
-
     if (grouping === MARKER_GROUP.INDIVIDUAL) {
       const markerGroups = foundSchools.map(school => {
         const item = makeSchoolObject(school, env.DATA_URL)
@@ -93,33 +92,42 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
     }
 
     if (grouping === MARKER_GROUP.NEGERI) {
-      const negeriGroups = new Map<string, EntitiSekolah[]>()
+      const negeriGroups = new Set<string>()
       foundSchools.forEach(school => {
-        const negeriKey = school.data.infoPentadbiran.negeri || 'UNKNOWN_NEGERI'
-        const list = negeriGroups.get(negeriKey) || []
-        list.push(school)
-        negeriGroups.set(negeriKey, list)
+        const negeriKey = school.data.infoPentadbiran.negeri
+        if (negeriKey) {
+          negeriGroups.add(negeriKey)
+        }
       })
 
-      const markerGroups = await Promise.all(
-        Array.from(negeriGroups.entries()).map(async ([negeri]) => {
-          const centroidDoc = await NegeriPolygonModel.findOne({ negeri }).lean()
-          const centroid = centroidDoc?.centroid
-          const centroidXX = centroid?.koordinatXX
-          const centroidYY = centroid?.koordinatYY
-          const total = await EntitiSekolahModel.countDocuments({ 'data.infoPentadbiran.negeri': negeri })
+      const negeriKeys = Array.from(negeriGroups)
+      const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
+        { $match: { 'data.infoPentadbiran.negeri': { $in: negeriKeys } } },
+        { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
+      ])
+      const negeriTotalsMap = new Map<string, number>(negeriTotals.map(item => [item._id, item.total]))
 
-          return {
-            markerType: MARKER_GROUP.NEGERI,
-            negeri,
-            infoLokasi: {
-              koordinatXX: centroidXX,
-              koordinatYY: centroidYY,
-            },
-            total,
-          }
-        }),
+      const allCentroid = await NegeriPolygonModel.find().lean()
+      const negeriCentroidMap = new Map<string, PolygonCentroid>(
+        allCentroid.map(item => [item.negeri as string, item.centroid as PolygonCentroid]),
       )
+
+      const markerGroups = negeriKeys.map(negeriKey => {
+        const centroid = negeriCentroidMap.get(negeriKey)
+        const centroidXX = centroid?.koordinatXX
+        const centroidYY = centroid?.koordinatYY
+        const total = negeriTotalsMap.get(negeriKey)
+
+        return {
+          markerType: MARKER_GROUP.NEGERI,
+          negeri: negeriKey,
+          infoLokasi: {
+            koordinatXX: centroidXX,
+            koordinatYY: centroidYY,
+          },
+          total,
+        }
+      })
 
       const response = {
         viewInfoLokasi,
@@ -130,36 +138,45 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
     }
 
     // PARLIMEN grouping
-    const parlimenGroups = new Map<string, { negeri: string; parlimen: string; schools: EntitiSekolah[] }>()
+    const parlimenGroups = new Map<string, { negeri: string; parlimen: string }>()
     foundSchools.forEach(school => {
-      const negeriKey = school.data.infoPentadbiran.negeri || 'UNKNOWN_NEGERI'
-      const parlimenKey = school.data.infoPentadbiran.parlimen || 'UNKNOWN_PARLIMEN'
-      const key = `${negeriKey}||${parlimenKey}`
-      const entry = parlimenGroups.get(key) || { negeri: negeriKey, parlimen: parlimenKey, schools: [] }
-      entry.schools.push(school)
-      parlimenGroups.set(key, entry)
+      const negeriKey = school.data.infoPentadbiran.negeri
+      const parlimenKey = school.data.infoPentadbiran.parlimen
+      if (negeriKey && parlimenKey) {
+        parlimenGroups.set(parlimenKey, { negeri: negeriKey, parlimen: parlimenKey })
+      }
     })
 
-    const markerGroups = await Promise.all(
-      Array.from(parlimenGroups.values()).map(async group => {
-        const centroidDoc =
-          group.parlimen !== 'UNKNOWN_PARLIMEN' ? await ParlimenPolygonModel.findOne({ parlimen: group.parlimen }).lean() : null
-        const centroid = centroidDoc?.centroid
-        const centroidXX = centroid?.koordinatXX
-        const centroidYY = centroid?.koordinatYY
+    const parlimenEntries = Array.from(parlimenGroups.values())
+    const parlimenKeys = parlimenEntries.map(entry => entry.parlimen)
+    const parlimenTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
+      { $match: { 'data.infoPentadbiran.parlimen': { $in: parlimenKeys } } },
+      { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
+    ])
+    const parlimenTotalsMap = new Map<string, number>(parlimenTotals.map(item => [item._id, item.total]))
 
-        return {
-          markerType: MARKER_GROUP.PARLIMENT,
-          negeri: group.negeri,
-          parlimen: group.parlimen,
-          infoLokasi: {
-            koordinatXX: centroidXX,
-            koordinatYY: centroidYY,
-          },
-          total: group.schools.length,
-        }
-      }),
+    const allParlimenCentroid = await ParlimenPolygonModel.find().lean()
+    const parlimenCentroidMap = new Map<string, PolygonCentroid>(
+      allParlimenCentroid.map(item => [item.parlimen as string, item.centroid as PolygonCentroid]),
     )
+
+    const markerGroups = parlimenEntries.map(group => {
+      const centroid = parlimenCentroidMap.get(group.parlimen)
+      const centroidXX = centroid?.koordinatXX
+      const centroidYY = centroid?.koordinatYY
+      const total = parlimenTotalsMap.get(group.parlimen)
+
+      return {
+        markerType: MARKER_GROUP.PARLIMENT,
+        negeri: group.negeri,
+        parlimen: group.parlimen,
+        infoLokasi: {
+          koordinatXX: centroidXX,
+          koordinatYY: centroidYY,
+        },
+        total,
+      }
+    })
 
     const response = {
       viewInfoLokasi,
