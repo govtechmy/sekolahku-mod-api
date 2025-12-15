@@ -1,4 +1,4 @@
-import type { RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
+import type { NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
   name: string
@@ -10,8 +10,17 @@ export interface UserEntity {
 }
 
 export interface GeoJSONPoint {
-  type: number
+  type: 'Point'
   coordinates: [number, number]
+}
+
+export interface PolygonCentroid {
+  /** GeoJSON point representing centroid location */
+  location?: GeoJSONPoint | null
+  /** Longitude component of centroid */
+  koordinatXX?: number | null
+  /** Latitude component of centroid */
+  koordinatYY?: number | null
 }
 
 export interface InfoSekolah {
@@ -76,17 +85,13 @@ export interface EntitiSekolahData {
 export interface EntitiSekolah {
   /** Name of the school */
   namaSekolah?: string | null
-  /** S3 link for Logo */
-  logoSekolah?: string
   /** Unique school code identifier */
   kodSekolah: string
   /** Nested school data */
   data: EntitiSekolahData
   /** School status */
-  status: SEKOLAH_STATUS
-  /** UTC timestamp when the document was last updated */
-  updatedAt: Date
-  /** UTC timestamp when the document is First Time Created */
+  status?: SEKOLAH_STATUS | null
+  /** UTC timestamp when the document was created */
   createdAt: Date
 }
 export interface AnalitikItem {
@@ -106,8 +111,6 @@ export interface AnalitikSekolahData {
 }
 
 export interface EntitiAnalitikSekolah {
-  /** Fixed document ID */
-  _id: number
   /** Total number of schools processed */
   jumlahSekolah: number
   /** Total number of teachers */
@@ -116,10 +119,10 @@ export interface EntitiAnalitikSekolah {
   jumlahPelajar: number
   /** Analytics data container */
   data: AnalitikSekolahData
-  /** UTC timestamp when the document was last updated */
-  updatedAt: Date
-  /** UTC timestamp when the document was first created */
+  /** UTC timestamp when the document was created */
   createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt?: Date
 }
 
 export interface Sekolah {
@@ -179,14 +182,36 @@ export interface Sekolah {
   koordinatYY?: number | null
   /** SKM LEQ 150 status */
   skmLEQ150?: boolean | null
-  /** GeoJSON point for geospatial queries */
-  location?: GeoJSONPoint | null
   /** Sekolah Status */
   status?: SEKOLAH_STATUS | null
   /** checksum */
   checksum?: string | null
-  /** UTC timestamp when the document was last updated */
-  updatedAt?: Date
+  /** UTC timestamp when the document was created */
+  createdAt?: Date
+}
+
+export interface NegeriPolygon {
+  /** State name */
+  negeri: NEGERI
+  /** GeoJSON MultiPolygon for the state */
+  geometry: Record<string, unknown>
+  /** Optional centroid details */
+  centroid?: PolygonCentroid | null
+  /** UTC timestamp when the polygon was last updated */
+  updatedAt: Date
+}
+
+export interface ParlimenPolygon {
+  /** State name */
+  negeri: NEGERI
+  /** Parliament constituency name */
+  parlimen: string
+  /** GeoJSON MultiPolygon for the parliament area */
+  geometry: Record<string, unknown>
+  /** Optional centroid details */
+  centroid?: PolygonCentroid | null
+  /** UTC timestamp when the polygon was last updated */
+  updatedAt: Date
 }
 export interface ResponseModel {
   status: RESPONSE_STATUS
@@ -203,6 +228,100 @@ export interface ResponseListModel {
   items: unknown[]
   pageNumber: number
   pageSize: number
+}
+
+// Lexical Editor Types for Siaran Content
+export interface LexicalTextNode {
+  detail: number
+  format: number
+  mode: string
+  style: string
+  text: string
+  type: 'text'
+  version: number
+}
+
+export interface LexicalElementNode {
+  children: Array<LexicalTextNode | LexicalElementNode>
+  direction: string | null
+  format: string
+  indent: number
+  type: string
+  version: number
+  textFormat?: number
+  textStyle?: string
+}
+
+export interface LexicalRootNode {
+  children: LexicalElementNode[]
+  direction: string | null
+  format: string
+  indent: number
+  type: 'root'
+  version: number
+}
+
+export interface SiaranContent {
+  root: LexicalRootNode
+}
+
+export interface SiaranAttachment {
+  /** Reference to articles-media document ID */
+  image?: string | null
+  id?: string
+}
+
+export interface Siaran {
+  /** Article title */
+  title: string
+  /** Reference to articles-media document ID */
+  image: string
+  /** Estimated read time in minutes */
+  readTime: number
+  /** Publication date of the article */
+  articleDate: Date
+  /** Array of attachment objects with image references */
+  attachments?: SiaranAttachment[]
+  /** Lexical editor rich text content */
+  content: SiaranContent
+  /** Reference to category document ID */
+  category: string
+  /** UTC timestamp when the document was created */
+  createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+}
+
+// Acara types (same structure as Siaran)
+export interface AcaraContent {
+  root: LexicalRootNode
+}
+
+export interface AcaraAttachment {
+  /** Reference to articles-media document ID */
+  image?: string | null
+  id?: string
+}
+
+export interface Acara {
+  /** Event title */
+  title: string
+  /** Reference to articles-media document ID */
+  image: string
+  /** Estimated read time in minutes */
+  readTime: number
+  /** Event date */
+  articleDate: Date
+  /** Array of attachment objects with image references */
+  attachments?: AcaraAttachment[]
+  /** Lexical editor rich text content */
+  content: AcaraContent
+  /** Reference to category document ID */
+  category: string
+  /** UTC timestamp when the document was created */
+  createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
 }
 
 export interface SystemConfig {

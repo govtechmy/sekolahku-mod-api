@@ -1,0 +1,27 @@
+import { MARKER_GROUP } from '@types'
+import { z } from 'zod'
+
+const ViewInfoLokasiSchema = z.object({
+  koordinatXX: z.number().optional(),
+  koordinatYY: z.number().optional(),
+  zoom: z.number().optional(),
+})
+
+const MarkerItemSchema = z.object({
+  infoLokasi: ViewInfoLokasiSchema.optional(),
+  kodSekolah: z.string().optional(),
+  dataUrl: z.string().optional(),
+})
+
+const MarkerGroupItemSchema = MarkerItemSchema.extend({
+  markerType: z.enum(MARKER_GROUP).optional(),
+  radiusInMeter: z.number().optional(),
+  items: z.array(MarkerItemSchema).optional(),
+})
+
+export const FindNearbyResponseSchema = z.object({
+  viewInfoLokasi: ViewInfoLokasiSchema,
+  markerGroups: z.array(MarkerGroupItemSchema),
+})
+
+export type FindNearbyResponse = z.infer<typeof FindNearbyResponseSchema>

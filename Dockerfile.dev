@@ -3,7 +3,7 @@
 # ================================
 # Build stage
 # ================================
-FROM oven/bun:1.3.1-alpine AS builder
+FROM oven/bun:1.3.4-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git
@@ -71,5 +71,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 # Use exec form for proper signal handling
 CMD ["bun", "run", "start"]
-
-

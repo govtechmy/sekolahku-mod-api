@@ -1,0 +1,14 @@
+### Get all Acara
+GET http://localhost:3000/acara
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get Acara By ID
+GET http://localhost:3000/acara/692ea8cd66db544aa4fe503b
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Search Acara
+GET http://localhost:3000/acara?search=Kanak
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

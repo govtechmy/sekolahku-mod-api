@@ -1,43 +1,29 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 
-import {
-  createSchool,
-  getNearbySchools,
-  getSchoolById,
-  getSchoolsSearchSuggestion,
-  listSchools,
-} from '../src/controllers/schools.controller'
-import { EntitiSekolahModel } from '../src/models/school.model'
+import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
+import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
 describe('schools controller', () => {
-  type MockQueryType = {
-    lean: ReturnType<typeof mock>
-    skip: ReturnType<typeof mock>
-    limit: ReturnType<typeof mock>
-  }
-  type MockQueryOneType = {
-    lean: ReturnType<typeof mock>
-  }
-
-  let mockQuery: MockQueryType
-  let mockQueryOne: MockQueryOneType
-
   beforeEach(() => {
-    mockQuery = {
-      lean: mock(() => Promise.resolve([])),
-      skip: mock(() => mockQuery),
-      limit: mock(() => mockQuery),
-    }
-    mockQueryOne = {
-      lean: mock(() => Promise.resolve(null)),
-    }
-    ;(EntitiSekolahModel.find as unknown) = mock(() => mockQuery)
-    ;(EntitiSekolahModel.findOne as unknown) = mock(() => mockQueryOne)
-    ;(EntitiSekolahModel.create as unknown) = mock(() => Promise.resolve({}))
-    ;(EntitiSekolahModel.countDocuments as unknown) = mock(() => Promise.resolve(0))
+    // Mock DB connection to prevent actual DB calls
+    mock.module('../src/config/db.config', () => ({
+      payloadConnection: {
+        model: mock(() => ({})),
+      },
+      sekolahkuConnection: {
+        model: mock(() => ({})),
+      },
+    }))
+
+    EntitiSekolahModel.find = mockedModel.find
+    EntitiSekolahModel.findOne = mockedModel.findOne
+    EntitiSekolahModel.create = mockedModel.create
+    EntitiSekolahModel.countDocuments = mockedModel.countDocuments
   })
+
   describe('listSchools', () => {
     test('should return list of schools', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
@@ -65,7 +51,7 @@ describe('schools controller', () => {
     test('should create a school and return 201', async () => {
       const mockBody: CreateSchoolBody = { kodSekolah: '001', namaSekolah: 'New School' } as CreateSchoolBody
       const mockCreated = { ...mockBody, _id: '123' }
-      ;(EntitiSekolahModel.create as ReturnType<typeof mock>).mockResolvedValue(mockCreated)
+      mockedModel.create.mockResolvedValue(mockCreated)
 
       const mockReply = {
         code: mock(() => mockReply),
@@ -142,15 +128,23 @@ describe('schools controller', () => {
     })
   })
 
-  describe('getNearbySchools', () => {
+  describe('getFindNearby', () => {
     test('should return nearby schools', async () => {
-      const mockSchools = [
-        {
-          kodSekolah: '001',
-          data: { infoLokasi: { location: { coordinates: [101.5, 3.1] } } },
+      const mockSchool = {
+        kodSekolah: 'BBA8238',
+        data: {
+          infoLokasi: {
+            location: {
+              coordinates: [101.508713, 3.088043],
+            },
+          },
+          infoPentadbiran: {
+            negeri: 'SELANGOR',
+            parlimen: 'SHAH_ALAM',
+          },
         },
-      ]
-      mockQuery.lean.mockResolvedValue(mockSchools)
+      }
+      mockQuery.lean.mockResolvedValue([mockSchool])
 
       const mockReply = {
         send: mock(() => ({})),
@@ -158,11 +152,11 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+        query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 10000 },
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(EntitiSekolahModel.find).toHaveBeenCalledWith({
         'data.infoLokasi.location': {
@@ -171,19 +165,42 @@ describe('schools controller', () => {
               type: 'Point',
               coordinates: [101.5, 3.1],
             },
-            $maxDistance: 1000,
+            $maxDistance: 10000,
           },
         },
       })
+      const expectedResponse = {
+        viewInfoLokasi: {
+          koordinatXX: 101.508713,
+          koordinatYY: 3.088043,
+          zoom: 20,
+        },
+        markerGroups: [
+          {
+            markerType: 'INDIVIDUAL',
+            radiusInMeter: 0,
+            items: [
+              {
+                kodSekolah: 'BBA8238',
+                infoLokasi: {
+                  koordinatXX: 101.508713,
+                  koordinatYY: 3.088043,
+                },
+                dataUrl: 'http://localhost:3000/SELANGOR/SHAH_ALAM/BBA8238/BBA8238.json',
+              },
+            ],
+          },
+        ],
+      }
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: [{ kodSekolah: '001', location: [101.5, 3.1] }],
+        data: expectedResponse,
       })
     })
 
     test('should return empty array if no schools found', async () => {
-      mockQuery.lean.mockResolvedValue([])
+      mockQuery.lean.mockResolvedValue({})
 
       const mockReply = {
         send: mock(() => ({})),
@@ -194,7 +211,7 @@ describe('schools controller', () => {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
@@ -216,7 +233,7 @@ describe('schools controller', () => {
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
-      await getNearbySchools(mockReq, mockReply)
+      await getFindNearby(mockReq, mockReply)
 
       expect(mockReply.code).toHaveBeenCalledWith(500)
       expect(mockReply.send).toHaveBeenCalledWith({
@@ -235,8 +252,9 @@ describe('schools controller', () => {
   describe('getSchoolsSearchSuggestion', () => {
     test('should return search results without location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
@@ -268,7 +286,7 @@ describe('schools controller', () => {
 
     test('should return search results with location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
 
       const mockReply = {
@@ -287,8 +305,29 @@ describe('schools controller', () => {
       expect(mockReply.send).toHaveBeenCalled()
     })
 
+    test('should return search results with location', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
+      mockQuery.lean.mockResolvedValue(1)
+      mockQuery.lean.mockResolvedValue(mockSchools)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000, negeri: 'something' },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalled()
+      expect(EntitiSekolahModel.find).toHaveBeenCalled()
+      expect(mockReply.send).toHaveBeenCalled()
+    })
+
     test('should handle error', async () => {
-      ;(EntitiSekolahModel.countDocuments as ReturnType<typeof mock>).mockRejectedValue(new Error('DB error'))
+      mockQuery.lean.mockRejectedValue(new Error('DB error'))
 
       const mockReply = {
         code: mock(() => mockReply),

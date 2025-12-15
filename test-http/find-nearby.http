@@ -1,0 +1,226 @@
+### 
+GET http://localhost:3000/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### 
+GET http://localhost:3000/schools/find-nearby?name=la%20salle
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+
+### markerType = GROUP | INDIVIDUAL | NEGERI | PARLIMENT | WEST_EAST | MALAYSIA
+
+
+### 
+GET http://localhost:3000/schools/find-nearby?name=la%20salle
+
+Response: 200 OK
+
+{
+  "viewInfoLokasi": {
+    "koordinatXX": 37.7749,
+    "koordinatYY": -122.4194,
+    "zoom": 7
+  },
+  "markerGroups": [
+    {
+      "markerType": "INDIVIDUAL",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "kodSekolah": "SCH001",
+      "dataUrl": "https://data.sekolahku.my/schools/SCH001/SCH001.json"
+    },
+    {
+      "markerType": "GROUP",
+      "radiusInMeter": 10_000,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "total": 5,
+      "items": [{
+        "kodSekolah": "SCH002",
+        "infoLokasi": {
+          "koordinatXX": 37.7750,
+          "koordinatYY": -122.4180
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH002/SCH002.json"
+      }, {
+        "kodSekolah": "SCH003",
+        "infoLokasi": {
+          "koordinatXX": 37.7760,
+          "koordinatYY": -122.4170
+        }
+      }, {
+        "kodSekolah": "SCH004",
+        "infoLokasi": {
+          "koordinatXX": 37.7770,
+          "koordinatYY": -122.4160
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH004/SCH004.json"
+      }, {
+        "kodSekolah": "SCH005",
+        "infoLokasi": {
+          "koordinatXX": 37.7780,
+          "koordinatYY": -122.4150
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH005/SCH005.json"
+      }, {
+        "kodSekolah": "SCH006",
+        "infoLokasi": {
+          "koordinatXX": 37.7790,
+          "koordinatYY": -122.4140
+        },
+        "dataUrl": "https://data.sekolahku.my/schools/SCH006/SCH006.json"
+      }]
+    }
+  ]
+}
+
+###
+GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=5
+
+Response: 200 OK
+
+{
+  "viewInfoLokasi": {
+    "koordinatXX": 37.7749,
+    "koordinatYY": -122.4194,
+    "zoom": 6
+  },
+  "markerGroups": [
+    {
+      "markerType": "NEGERI",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "total": 1000
+    }
+  ]
+}
+
+
+###
+GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=9
+
+Response: 200 OK
+
+{
+  "viewInfoLokasi": {
+    "koordinatXX": 37.7749,
+    "koordinatYY": -122.4194,
+    "zoom": 6
+  },
+  "markerGroups": [
+    {
+      "markerType": "PARLIMEN",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "total": 230
+    }
+  ]
+}
+
+###
+GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=12
+
+Response: 200 OK
+
+{
+  "viewInfoLokasi": {
+    "koordinatXX": 37.7749,
+    "koordinatYY": -122.4194,
+    "zoom": 6
+  },
+  "markerGroups": [
+    {
+      "markerType": "group",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "total": 10,
+      "items": [{
+        "kodSekolah": "SCH002",
+        "infoLokasi": {
+          "koordinatXX": 37.7750,
+          "koordinatYY": -122.4180
+        }
+      }, {
+        "kodSekolah": "SCH003",
+        "infoLokasi": {
+          "koordinatXX": 37.7760,
+          "koordinatYY": -122.4170
+        }
+      }, {
+        "kodSekolah": "SCH004",
+        "infoLokasi": {
+          "koordinatXX": 37.7770,
+          "koordinatYY": -122.4160
+        }
+      }, {
+        "kodSekolah": "SCH005",
+        "infoLokasi": {
+          "koordinatXX": 37.7780,
+          "koordinatYY": -122.4150
+        }
+      }, {
+        "kodSekolah": "SCH006",
+        "infoLokasi": {
+          "koordinatXX": 37.7790,
+          "koordinatYY": -122.4140
+        }
+      }]
+    }
+  ]
+}
+
+###
+GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=14
+
+Response: 200 OK
+
+{
+  "viewInfoLokasi": {
+    "koordinatXX": 37.7749,
+    "koordinatYY": -122.4194,
+    "zoom": 6
+  },
+  "markerGroups": [
+    {
+      "markerType": "INDIVIDUAL",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "kodSekolah": "SCH001"
+    },
+    {
+      "markerType": "INDIVIDUAL",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "kodSekolah": "SCH001"
+    },
+    {
+      "markerType": "INDIVIDUAL",
+      "radiusInMeter": 0,
+      "infoLokasi": {
+        "koordinatXX": 37.7749,
+        "koordinatYY": -122.4194
+      },
+      "kodSekolah": "SCH001"
+    }
+  ]
+}

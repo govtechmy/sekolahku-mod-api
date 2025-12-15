@@ -6,3 +6,4 @@ export {
   type ListSchoolsSearchQuery,
   listSchoolsSearchQuerySchema,
 } from './request.schema'
+export { FindNearbyResponseSchema } from './response.schema'

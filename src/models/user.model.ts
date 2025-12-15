@@ -1,5 +1,7 @@
 import { ROLES, type UserEntity } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+
+import { payloadConnection } from '../config/db.config'
 
 const UserSchema = new Schema<UserEntity>(
   {
@@ -13,4 +15,4 @@ const UserSchema = new Schema<UserEntity>(
   { timestamps: true },
 )
 
-export const UserModel = model<UserEntity>('User', UserSchema)
+export const UserModel = payloadConnection.model<UserEntity>('User', UserSchema)

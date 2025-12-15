@@ -1,5 +1,5 @@
-import { model, Schema } from 'mongoose'
 import { type SystemConfig } from '@types'
+import { model, Schema } from 'mongoose'
 
 export const SystemConfigSchema = new Schema<SystemConfig>(
   {

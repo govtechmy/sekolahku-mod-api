@@ -1,12 +1,16 @@
+import { MARKER_GROUP } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { env } from 'src/config/env.config'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
+import { SystemConfigModel } from 'src/models/system-config.model'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { GetNearbySchoolByLocation } from 'src/schemas/schools/request.schema'
+import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
+import { calculateLocationCenter } from 'src/services/geometry.svc'
+import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
-
-import { EntitiSekolahModel } from '../models/school.model'
-import { SystemConfigModel } from 'src/models/system-config.model'
 // Zod now validates query parameters via `getNearbySchoolByLocationSchema` wired in the route
 
 const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
@@ -33,9 +37,9 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 }
 
 // the function is to list all schools within the radius
-export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
+export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, radiusInMeter } = req.query
+  const { latitude, longitude, radiusInMeter, name } = req.query
 
   const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
   const radius = Number(radiusConfig?.value ?? 100000)
@@ -43,39 +47,70 @@ export async function getNearbySchools(req: FastifyRequest<{ Querystring: GetNea
 
   //Querying to find school in db
   try {
-    const foundSchools = await EntitiSekolahModel.find({
-      'data.infoLokasi.location': {
-        $nearSphere: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [longitude, latitude],
+    const query = {}
+    if (latitude && longitude && radiusInMeter) {
+      Object.assign(query, {
+        'data.infoLokasi.location': {
+          $nearSphere: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude],
+            },
+            $maxDistance: effectiveRadius,
           },
-          $maxDistance: effectiveRadius,
         },
-      },
-    }).lean()
+      })
+    }
+
+    if (name) {
+      Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(name), $options: 'i' } })
+    }
+
+    const foundSchools = await EntitiSekolahModel.find(query).lean()
 
     if (!Array.isArray(foundSchools) || foundSchools.length === 0) {
       return reply.send(createSuccessResponse([]))
     }
 
+    const coordinates = foundSchools.map(school => {
+      return [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]]
+    })
+    const centerCoordinate = calculateLocationCenter(coordinates)
+
     const data = foundSchools.map(school => ({
       kodSekolah: school.kodSekolah,
       location: [school.data.infoLokasi.location?.coordinates[0], school.data.infoLokasi.location?.coordinates[1]],
+      dataUrl: `${env.DATA_URL}/${school.data.infoPentadbiran.negeri}/${school.data.infoPentadbiran.parlimen}/${school.kodSekolah}/${school.kodSekolah}.json`,
     }))
 
-    return reply.send(createSuccessResponse(data))
+    const response = {
+      viewInfoLokasi: {
+        koordinatXX: centerCoordinate.center[0],
+        koordinatYY: centerCoordinate.center[1],
+        zoom: centerCoordinate.zoom,
+      },
+      markerGroups: data.map(item => ({
+        markerType: MARKER_GROUP.INDIVIDUAL,
+        radiusInMeter: 0,
+        items: [
+          {
+            kodSekolah: item.kodSekolah,
+            infoLokasi: {
+              koordinatXX: item.location[0],
+              koordinatYY: item.location[1],
+            },
+            dataUrl: item.dataUrl,
+          },
+        ],
+      })),
+    } as FindNearbyResponse
+
+    return reply.send(createSuccessResponse(response))
   } catch (error) {
     req.log.error({ err: error }, 'schools:getNearby:error')
     const errResponse = createErrorResponse('Failed to fetch nearby schools. Please check your coordinates and try again.', 'ERR_500', 500)
-
     return reply.code(500).send(errResponse)
   }
-}
-
-// Utility function to escape special characters in regex
-function escapeStringRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
@@ -102,7 +137,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       // Fetch radius from SystemConfig if radiusInMeter is not provided from frontend
       const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
       const radius = Number(radiusConfig?.value ?? 100000)
-      
+
       // Use frontend value if provided, otherwise use config value
       const effectiveRadius = radiusInMeter ?? radius
 
