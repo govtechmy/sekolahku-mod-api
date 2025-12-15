@@ -1,5 +1,6 @@
 import { type SystemConfig } from '@types'
-import { model, Schema } from 'mongoose'
+import { Schema } from 'mongoose'
+import { sekolahkuConnection } from 'src/config/db.config'
 
 export const SystemConfigSchema = new Schema<SystemConfig>(
   {
@@ -27,4 +28,4 @@ export const SystemConfigSchema = new Schema<SystemConfig>(
   },
 )
 
-export const SystemConfigModel = model<SystemConfig>('SystemConfig', SystemConfigSchema, 'SystemConfig')
+export const SystemConfigModel = sekolahkuConnection.model<SystemConfig>('SystemConfig', SystemConfigSchema, 'SystemConfig')
