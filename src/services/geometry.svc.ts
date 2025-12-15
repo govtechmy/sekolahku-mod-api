@@ -1,3 +1,5 @@
+import { type EntitiSekolah } from '@types'
+
 export function calculateLocationCenter(coordinates: unknown[]) {
   let totalLon: number = 0
   let totalLat: number = 0
@@ -45,4 +47,24 @@ export function calculateLocationCenter(coordinates: unknown[]) {
   zoom = Math.max(0, Math.min(20, zoom))
 
   return { center: [centerLon, centerLat], zoom }
+}
+
+export function returnWithinRadius(schools: EntitiSekolah[], longitude: number, latitude: number, radiusInMeter: number) {
+  const earthRadius = 6371000
+  const toRadians = (deg: number) => (deg * Math.PI) / 180
+
+  return schools.filter(school => {
+    const coordinates = school.data.infoLokasi.location?.coordinates
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return false
+    const [lon, lat] = coordinates
+    if (typeof lon !== 'number' || typeof lat !== 'number') return false
+
+    const dLat = toRadians(lat - latitude)
+    const dLon = toRadians(lon - longitude)
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(latitude)) * Math.cos(toRadians(lat)) * Math.sin(dLon / 2) ** 2
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const distance = earthRadius * c
+
+    return distance <= radiusInMeter
+  })
 }
