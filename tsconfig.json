@@ -36,6 +36,8 @@
       "@/schemas": ["src/schemas/index.ts"],
       "@models": ["src/model/index.ts"],
       "@/models": ["src/model/index.ts"],
+      "@/services": ["src/services"],
+      "@services": ["src/services"]
     }
   }
 }
