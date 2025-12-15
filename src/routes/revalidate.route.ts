@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 
-import { authHeaderSchema, revalidateRequestSchema, revalidateParamsSchema, revalidateResponseSchema } from '@/schemas'
 import type { RevalidateParams } from '@/schemas'
+import { authHeaderSchema, revalidateParamsSchema, revalidateRequestSchema, revalidateResponseSchema } from '@/schemas'
 
 import { revalidateSchoolEntities } from '../controllers/revalidate.controller'
 import { authMiddleware } from '../middleware/auth.middleware'

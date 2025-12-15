@@ -1,7 +1,6 @@
 import type { GeoJSONPoint, ParlimenPolygon, PolygonCentroid } from '@types'
 import { Schema } from 'mongoose'
-
-import { sekolahkuConnection } from '../config/db.config'
+import { sekolahkuConnection } from 'src/config/db.config'
 
 const GeoJSONPointSchema = new Schema<GeoJSONPoint>(
   {

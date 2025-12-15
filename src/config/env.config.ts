@@ -11,11 +11,16 @@ const EnvSchema = z.object({
   MONGODB_URI_PAYLOAD: z.string().min(1),
   API_KEY: z.string().min(1),
   DATAPROC_SERVICE_URL: z.string(),
-  FRONTEND_ORIGIN: z
+  MULTIPLE_ORIGINS: z
     .string()
     .optional()
-    .refine(val => !val || URL.canParse(val), { message: 'Invalid URL' }),
-  MULTIPLE_ORIGINS: z.string().optional(),
+    .transform(val => {
+      if (!val) return [] as string[]
+      return val
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+    }),
   DATA_URL: z.string().url(),
 })
 
@@ -28,7 +33,6 @@ function mapSecrets(secrets: Record<string, unknown>) {
     MONGODB_URI_PAYLOAD: secrets.MONGODB_URI_PAYLOAD,
     API_KEY: secrets.API_KEY,
     DATAPROC_SERVICE_URL: secrets.DATAPROC_SERVICE_URL,
-    FRONTEND_ORIGIN: secrets.FRONTEND_ORIGIN,
     MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
     DATA_URL: secrets.DATA_URL,
   }
@@ -56,7 +60,7 @@ async function resolveEnv() {
   }
 
   const isProduction = parsed.APP_ENV === 'production'
-  if (isProduction && (!Array.isArray(parsed.FRONTEND_ORIGIN) || parsed.FRONTEND_ORIGIN.length === 0)) {
+  if (isProduction && (!Array.isArray(parsed.MULTIPLE_ORIGINS) || parsed.MULTIPLE_ORIGINS.length === 0)) {
     throw new Error('MULTIPLE_ORIGINS is required in production environment')
   }
 

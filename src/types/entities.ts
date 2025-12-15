@@ -1,4 +1,4 @@
-import type { Negeri, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
+import type { NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
   name: string
@@ -10,7 +10,7 @@ export interface UserEntity {
 }
 
 export interface GeoJSONPoint {
-  type: number
+  type: 'Point'
   coordinates: [number, number]
 }
 
@@ -85,17 +85,13 @@ export interface EntitiSekolahData {
 export interface EntitiSekolah {
   /** Name of the school */
   namaSekolah?: string | null
-  /** S3 link for Logo */
-  logoSekolah?: string
   /** Unique school code identifier */
   kodSekolah: string
   /** Nested school data */
   data: EntitiSekolahData
   /** School status */
-  status: SEKOLAH_STATUS
-  /** UTC timestamp when the document was last updated */
-  updatedAt: Date
-  /** UTC timestamp when the document is First Time Created */
+  status?: SEKOLAH_STATUS | null
+  /** UTC timestamp when the document was created */
   createdAt: Date
 }
 export interface AnalitikItem {
@@ -115,8 +111,6 @@ export interface AnalitikSekolahData {
 }
 
 export interface EntitiAnalitikSekolah {
-  /** Fixed document ID */
-  _id: number
   /** Total number of schools processed */
   jumlahSekolah: number
   /** Total number of teachers */
@@ -125,10 +119,10 @@ export interface EntitiAnalitikSekolah {
   jumlahPelajar: number
   /** Analytics data container */
   data: AnalitikSekolahData
-  /** UTC timestamp when the document was last updated */
-  updatedAt: Date
-  /** UTC timestamp when the document was first created */
+  /** UTC timestamp when the document was created */
   createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt?: Date
 }
 
 export interface Sekolah {
@@ -188,19 +182,17 @@ export interface Sekolah {
   koordinatYY?: number | null
   /** SKM LEQ 150 status */
   skmLEQ150?: boolean | null
-  /** GeoJSON point for geospatial queries */
-  location?: GeoJSONPoint | null
   /** Sekolah Status */
   status?: SEKOLAH_STATUS | null
   /** checksum */
   checksum?: string | null
-  /** UTC timestamp when the document was last updated */
-  updatedAt?: Date
+  /** UTC timestamp when the document was created */
+  createdAt?: Date
 }
 
 export interface NegeriPolygon {
   /** State name */
-  negeri: Negeri
+  negeri: NEGERI
   /** GeoJSON MultiPolygon for the state */
   geometry: Record<string, unknown>
   /** Optional centroid details */
@@ -211,7 +203,7 @@ export interface NegeriPolygon {
 
 export interface ParlimenPolygon {
   /** State name */
-  negeri: Negeri
+  negeri: NEGERI
   /** Parliament constituency name */
   parlimen: string
   /** GeoJSON MultiPolygon for the parliament area */
