@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import mongoose from 'mongoose'
 
 import { registerAcaraRoutes } from './acara.route'
+import { registerAnalitikRoutes } from './analitik.route'
 import { registerRevalidateRoute } from './revalidate.route'
 import { registerSchoolRoutes } from './schools.routes'
 import { registerSiaranRoutes } from './siaran.route'
@@ -16,4 +17,5 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await registerSchoolRoutes(app)
   await registerSiaranRoutes(app)
   await registerAcaraRoutes(app)
+  await registerAnalitikRoutes(app)
 }
