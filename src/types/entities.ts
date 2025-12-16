@@ -110,7 +110,7 @@ export interface AnalitikSekolahData {
   bantuan: AnalitikItem[]
 }
 
-export interface EntitiAnalitikSekolah {
+export interface AnalitikSekolah {
   /** Total number of schools processed */
   jumlahSekolah: number
   /** Total number of teachers */
