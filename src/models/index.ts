@@ -1,4 +1,6 @@
 export * from './acara.model'
+export * from './entiti-analitik-sekolah.model'
+export * from './malaysia-polygon.model'
 export * from './analitik-sekolah.model'
 export * from './negeri-polygon.model'
 export * from './parlimen-polygon.model'
