@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { MalaysiaPolygonModel } from 'src/models'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 
@@ -19,10 +20,25 @@ describe('schools controller', () => {
       },
     }))
 
+    // Mock env
+    mock.module('../src/config/env.config', () => ({
+      env: { DATA_URL: 'http://localhost:3000' },
+    }))
+
     // Mock geometry service
     mock.module('../src/services/geometry.svc', () => ({
       returnWithinRadius: mock(schools => schools),
       calculateLocationCenter: mock(() => ({ center: [101.5, 3.1], zoom: 20 })),
+      getRadiusFromZoom: mock(() => 0),
+      getZoomFromRadius: mock(() => 15),
+    }))
+
+    mock.module('../src/controllers/schools.controller', () => ({
+      searchByRadius: mock(() => Promise.resolve({})),
+      searchByName: mock(() => Promise.resolve({})),
+      groupByWestEastMalaysia: mock(() => Promise.resolve({})),
+      groupByNegeri: mock(() => Promise.resolve({})),
+      groupByParlimen: mock(() => Promise.resolve({})),
     }))
 
     EntitiSekolahModel.find = mockedModel.find
@@ -30,6 +46,7 @@ describe('schools controller', () => {
     EntitiSekolahModel.create = mockedModel.create
     EntitiSekolahModel.countDocuments = mockedModel.countDocuments
 
+    MalaysiaPolygonModel.find = mock(() => Promise.resolve({})) as unknown as typeof MalaysiaPolygonModel.findOne
     SystemConfigModel.findOne = mock(() => Promise.resolve({ value: '10000' })) as unknown as typeof SystemConfigModel.findOne
   })
 
@@ -153,6 +170,7 @@ describe('schools controller', () => {
           },
         },
       }
+
       mockQuery.lean.mockResolvedValue([mockSchool])
 
       const mockReply = {
@@ -182,7 +200,7 @@ describe('schools controller', () => {
         viewInfoLokasi: {
           koordinatXX: 101.5,
           koordinatYY: 3.1,
-          zoom: 0,
+          zoom: 15,
         },
         markerGroups: [
           {
@@ -203,7 +221,7 @@ describe('schools controller', () => {
       })
     })
 
-    test('should return empty array if no schools found', async () => {
+    test('should return empty data object if no schools found', async () => {
       mockQuery.lean.mockResolvedValue({})
 
       const mockReply = {
@@ -213,14 +231,20 @@ describe('schools controller', () => {
 
       const mockReq = {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+        log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
       await getFindNearby(mockReq, mockReply)
 
       expect(mockReply.send).toHaveBeenCalledWith({
-        status: 'SUCCESS',
-        statusCode: 200,
-        data: [],
+        status: 'ERROR',
+        statusCode: 500,
+        data: null,
+        error: {
+          code: 'ERR_500',
+          details: {},
+          message: 'Failed to fetch nearby schools. Please check your coordinates and try again.',
+        },
       })
     })
 

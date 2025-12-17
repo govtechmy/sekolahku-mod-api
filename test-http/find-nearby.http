@@ -7,7 +7,7 @@ GET http://localhost:3000/schools/find-nearby?name=la%20salle
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET http://localhost:3000/schools/find-nearby?latitude=4.541018451387127&longitude=100.94839830281042&radiusInMeter=1000&zoom=10
+GET http://localhost:3000/schools/find-nearby?latitude=4.541018451387127&longitude=100.94839830281042&radiusInMeter=1000&zoom=7
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 
