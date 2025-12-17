@@ -182,7 +182,7 @@ describe('schools controller', () => {
         viewInfoLokasi: {
           koordinatXX: 101.5,
           koordinatYY: 3.1,
-          zoom: 10000,
+          zoom: 0,
         },
         markerGroups: [
           {

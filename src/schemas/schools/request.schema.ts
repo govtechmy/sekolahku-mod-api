@@ -88,6 +88,7 @@ export const getNearbySchoolByLocationSchema = z.object({
     .number()
     .refine(v => v >= -180 && v <= 180)
     .optional(),
+  zoom: z.coerce.number().int().min(0).max(25).optional(),
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>

@@ -5,7 +5,7 @@ import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 import type { GetNearbySchoolByLocation, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
-import { calculateLocationCenter, returnWithinRadius } from 'src/services/geometry.svc'
+import { calculateLocationCenter, getRadiusFromZoom, returnWithinRadius } from 'src/services/geometry.svc'
 import { groupingFromRadius, makeSchoolObject } from 'src/services/nearby.helper'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -42,17 +42,26 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, radiusInMeter, name } = req.query
+  const { latitude, longitude, name } = req.query
+  let { radiusInMeter, zoom } = req.query
 
   if (longitude === undefined || latitude === undefined || radiusInMeter === undefined) {
     const errResponse = createErrorResponse('latitude, longitude, and radiusInMeter are required', 'ERR_400', 400)
     return reply.code(400).send(errResponse)
   }
 
+  if (zoom) {
+    radiusInMeter = getRadiusFromZoom(zoom, latitude)
+  }
+
+  if (!zoom) {
+    zoom = getRadiusFromZoom(radiusInMeter, latitude)
+  }
+
   const viewInfoLokasi = {
     koordinatXX: longitude,
     koordinatYY: latitude,
-    zoom: radiusInMeter,
+    zoom: zoom,
   }
 
   const grouping = groupingFromRadius(radiusInMeter)

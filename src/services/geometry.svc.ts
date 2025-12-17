@@ -68,3 +68,30 @@ export function returnWithinRadius(schools: EntitiSekolah[], longitude: number, 
     return distance <= radiusInMeter
   })
 }
+
+export function getRadiusFromZoom(zoom: number, latitude: number): number {
+  const earthCircumference = 40075016.686
+
+  // At zoom level 0, the entire world is visible (256 pixels)
+  // Each zoom level doubles the resolution
+  // The formula accounts for latitude distortion (Mercator projection)
+  const metersPerPixel = (earthCircumference * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, zoom + 8)
+
+  // Assuming a typical viewport width of ~500 pixels for visible radius
+  // Adjust this multiplier based on your map container size
+  const viewportPixels = 500
+
+  return metersPerPixel * viewportPixels * 2
+}
+
+export function getZoomFromRadius(radiusInMeter: number, latitude: number): number {
+  const earthCircumference = 40075016.686
+
+  // Estimate meters per pixel based on desired radius
+  const desiredMetersPerPixel = radiusInMeter / (500 * 2) // Assuming 500 pixels viewport width
+
+  // Calculate zoom level
+  const zoom = Math.log2((earthCircumference * Math.cos((latitude * Math.PI) / 180)) / desiredMetersPerPixel) - 8
+
+  return Math.max(0, Math.min(20, Math.round(zoom)))
+}
