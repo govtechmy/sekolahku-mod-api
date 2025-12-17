@@ -65,9 +65,5 @@ ENV PORT=3000 \
 # Expose port
 EXPOSE 3000
 
-# Health check with proper configuration
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f --max-time 10 http://localhost:3000/health || exit 1
-
 # Use exec form for proper signal handling
 CMD ["bun", "run", "start"]
