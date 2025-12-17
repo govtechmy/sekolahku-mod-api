@@ -1,4 +1,4 @@
-import type { AnalitikItem, AnalitikSekolahData, EntitiAnalitikSekolah } from '@types'
+import type { AnalitikItem, AnalitikSekolah, AnalitikSekolahData } from '@types'
 import { Schema } from 'mongoose'
 
 import { sekolahkuConnection } from '../config/db.config'
@@ -20,7 +20,7 @@ const AnalitikSekolahDataSchema = new Schema<AnalitikSekolahData>(
   { _id: false },
 )
 
-const EntitiAnalitikSekolahSchema = new Schema<EntitiAnalitikSekolah>(
+const AnalitikSekolahSchema = new Schema<AnalitikSekolah>(
   {
     jumlahSekolah: { type: Number, required: true },
     jumlahGuru: { type: Number, required: true },
@@ -30,7 +30,4 @@ const EntitiAnalitikSekolahSchema = new Schema<EntitiAnalitikSekolah>(
   { timestamps: true },
 )
 
-export const EntitiAnalitikSekolahModel = sekolahkuConnection.model<EntitiAnalitikSekolah>(
-  'EntitiAnalitikSekolah',
-  EntitiAnalitikSekolahSchema,
-)
+export const AnalitikSekolahModel = sekolahkuConnection.model<AnalitikSekolah>('AnalitikSekolah', AnalitikSekolahSchema, 'AnalitikSekolah')

@@ -9,7 +9,7 @@ function buildRevalidateUrl(servicePath: string): string {
 
 export async function revalidateSchoolEntitiesService(servicePath: string): Promise<void> {
   const endpoint = buildRevalidateUrl(servicePath)
-  const response = await fetch(endpoint, { method: 'GET' })
+  const response = await fetch(endpoint, { method: 'POST' })
 
   if (!response.ok) {
     throw new Error(`Dataproc service returned unexpected status ${response.status}`)

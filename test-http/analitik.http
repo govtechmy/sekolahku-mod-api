@@ -1,0 +1,4 @@
+### Get all Acara
+GET http://localhost:3000/analitik
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
