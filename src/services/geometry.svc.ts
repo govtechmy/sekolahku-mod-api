@@ -81,7 +81,7 @@ export function getRadiusFromZoom(zoom: number, latitude: number): number {
   // Adjust this multiplier based on your map container size
   const viewportPixels = 500
 
-  return metersPerPixel * viewportPixels * 2
+  return metersPerPixel * viewportPixels
 }
 
 export function getZoomFromRadius(radiusInMeter: number, latitude: number): number {
