@@ -1,4 +1,4 @@
-import type { NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
+import type { MARKER_GROUP, NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
   name: string
@@ -212,6 +212,16 @@ export interface ParlimenPolygon {
   centroid?: PolygonCentroid | null
   /** UTC timestamp when the polygon was last updated */
   updatedAt: Date
+}
+export interface MalaysiaPolygon {
+  /** Region identifier, e.g. WEST_MALAYSIA or EAST_MALAYSIA */
+  region: MARKER_GROUP.WEST_MALAYSIA | MARKER_GROUP.EAST_MALAYSIA
+  /** GeoJSON Polygon or MultiPolygon for the region */
+  geometry: Record<string, unknown>
+  /** Optional centroid details */
+  centroid?: PolygonCentroid | null
+  /** UTC timestamp when the document was created */
+  createdAt: Date
 }
 export interface ResponseModel {
   status: RESPONSE_STATUS
