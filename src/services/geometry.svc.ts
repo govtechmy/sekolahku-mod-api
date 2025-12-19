@@ -93,5 +93,5 @@ export function getZoomFromRadius(radiusInMeter: number, latitude: number): numb
   // Calculate zoom level
   const zoom = Math.log2((earthCircumference * Math.cos((latitude * Math.PI) / 180)) / desiredMetersPerPixel) - 8
 
-  return Math.max(0, Math.min(20, Math.round(zoom)))
+  return Math.max(0, Math.min(20, Math.round(zoom))) * 1.2
 }
