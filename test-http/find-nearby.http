@@ -1,13 +1,19 @@
+@url = https://sekolahku-api.govtechmy.xyz
+
 ### 
-GET http://localhost:3000/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
+GET {{url}}/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET http://localhost:3000/schools/find-nearby?name=la%20salle
+GET {{url}}/schools/find-nearby?name=la%20salle&latitude=3.1&longitude=101.5&radiusInMeter=100000
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET http://localhost:3000/schools/find-nearby?latitude=4.541018451387127&longitude=100.94839830281042&radiusInMeter=1000&zoom=7
+GET {{url}}/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=100000
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### 
+GET {{url}}/schools/find-nearby?latitude=4.541018451387127&longitude=100.94839830281042&radiusInMeter=1000&zoom=7
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 
@@ -16,7 +22,7 @@ Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 
 ### 
-GET http://localhost:3000/schools/find-nearby?name=la%20salle
+GET {{url}}/schools/find-nearby?name=la%20salle
 
 Response: 200 OK
 
@@ -85,7 +91,7 @@ Response: 200 OK
 }
 
 ###
-GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=5
+GET {{url}}/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=5
 
 Response: 200 OK
 
@@ -110,7 +116,7 @@ Response: 200 OK
 
 
 ###
-GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=9
+GET {{url}}/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=9
 
 Response: 200 OK
 
@@ -134,7 +140,7 @@ Response: 200 OK
 }
 
 ###
-GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=12
+GET {{url}}/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=12
 
 Response: 200 OK
 
@@ -189,7 +195,7 @@ Response: 200 OK
 }
 
 ###
-GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=14
+GET {{url}}/schools/find-nearby?latitude=4.9&longitude=100.4&zoom=14
 
 Response: 200 OK
 

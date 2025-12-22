@@ -22,10 +22,10 @@
       }
     }
   ],
-  "cpu": "512",
+  "cpu": "2048",
   "executionRoleArn": "arn:aws:iam::602670427499:role/sekolahku-ecsTaskExecutionRole-dev",
   "family": "sekolahku-mod-api-dev",
-  "memory": "1024",
+  "memory": "4096",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "taskRoleArn": "arn:aws:iam::602670427499:role/sekolahku-ecs-task-role-dev"
