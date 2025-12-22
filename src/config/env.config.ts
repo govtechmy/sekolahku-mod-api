@@ -10,6 +10,7 @@ const EnvSchema = z.object({
   MONGODB_URI: z.string().min(1),
   MONGODB_URI_PAYLOAD: z.string().min(1),
   API_KEY: z.string().min(1),
+  S3_BUCKET_NAME: z.string().min(1),
   DATAPROC_SERVICE_URL: z.string(),
   MULTIPLE_ORIGINS: z
     .string()
@@ -35,6 +36,7 @@ function mapSecrets(secrets: Record<string, unknown>) {
     DATAPROC_SERVICE_URL: secrets.DATAPROC_SERVICE_URL,
     MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
     DATA_URL: secrets.DATA_URL,
+    S3_BUCKET_NAME: secrets.S3_BUCKET_NAME,
   }
 }
 
