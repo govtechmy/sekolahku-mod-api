@@ -194,16 +194,23 @@ async function groupByWestEastMalaysia(params: {
   latitude: number
   longitude: number
   effectiveRadius: number
+  name?: string
 }) {
+  const query = {
+    'data.infoLokasi.location': {
+      $geoWithin: {
+        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
+      },
+    },
+  }
+
+  if (params.name) {
+    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
+  }
+
   const westEastTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
     {
-      $match: {
-        'data.infoLokasi.location': {
-          $geoWithin: {
-            $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
-          },
-        },
-      },
+      $match: query,
     },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
     {
@@ -254,16 +261,23 @@ async function groupByNegeri(params: {
   latitude: number
   longitude: number
   effectiveRadius: number
+  name?: string
 }) {
+  const query = {
+    'data.infoLokasi.location': {
+      $geoWithin: {
+        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
+      },
+    },
+  }
+
+  if (params.name) {
+    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
+  }
+
   const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
     {
-      $match: {
-        'data.infoLokasi.location': {
-          $geoWithin: {
-            $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
-          },
-        },
-      },
+      $match: query,
     },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
   ])
@@ -303,16 +317,23 @@ async function groupByParlimen(params: {
   latitude: number
   longitude: number
   effectiveRadius: number
+  name?: string
 }) {
+  const query = {
+    'data.infoLokasi.location': {
+      $geoWithin: {
+        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
+      },
+    },
+  }
+
+  if (params.name) {
+    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
+  }
+
   const parlimenTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
     {
-      $match: {
-        'data.infoLokasi.location': {
-          $geoWithin: {
-            $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
-          },
-        },
-      },
+      $match: query,
     },
     { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
   ])
@@ -393,6 +414,7 @@ async function searchByName(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      name: params.name,
     })
     return response
   }
@@ -403,6 +425,7 @@ async function searchByName(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      name: params.name,
     })
     return response
   }
@@ -413,6 +436,7 @@ async function searchByName(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      name: params.name,
     })
     return response
   }
