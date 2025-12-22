@@ -1,4 +1,4 @@
-@url = https://sekolahku-api.govtechmy.xyz
+@url = http://localhost:3000
 
 ### 
 GET {{url}}/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
@@ -14,6 +14,10 @@ Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
 GET {{url}}/schools/find-nearby?latitude=4.541018451387127&longitude=100.94839830281042&radiusInMeter=1000&zoom=7
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### 
+GET {{url}}/schools/find-nearby?latitude=2.9542&longitude=101.7001&radiusInMeter=19083.795772154335&zoom=8&name=kolej
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 
