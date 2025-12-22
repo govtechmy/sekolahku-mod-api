@@ -275,27 +275,47 @@ export interface SiaranContent {
   root: LexicalRootNode
 }
 
+export interface RenderedContentElement {
+  type: string
+  key: number
+  content?: string
+  textElements?: Array<{
+    text: string
+    format: number
+    style: string
+    detail: number
+    key: string
+  }>
+}
+
+export type RenderedContent = RenderedContentElement[] | null
+
 export interface SiaranAttachment {
   /** Reference to articles-media document ID */
   image?: string | null
   id?: string
 }
 
+export interface SiaranCategory {
+  /** Category name */
+  name: string
+}
+
 export interface Siaran {
   /** Article title */
   title: string
   /** Reference to articles-media document ID */
-  image: string
+  image: string | SiaranAttachment
   /** Estimated read time in minutes */
   readTime: number
   /** Publication date of the article */
   articleDate: Date
   /** Array of attachment objects with image references */
   attachments?: SiaranAttachment[]
-  /** Lexical editor rich text content */
-  content: SiaranContent
+  /** Lexical editor rich text content OR rendered content array */
+  content: SiaranContent | RenderedContent
   /** Reference to category document ID */
-  category: string
+  category: string | SiaranCategory
   /** UTC timestamp when the document was created */
   createdAt: Date
   /** UTC timestamp when the document was last updated */
@@ -313,21 +333,26 @@ export interface AcaraAttachment {
   id?: string
 }
 
+export interface AcaraCategory {
+  /** Category name */
+  name: string
+}
+
 export interface Acara {
   /** Event title */
   title: string
   /** Reference to articles-media document ID */
-  image: string
+  image: string | AcaraAttachment
   /** Estimated read time in minutes */
   readTime: number
   /** Event date */
   articleDate: Date
   /** Array of attachment objects with image references */
   attachments?: AcaraAttachment[]
-  /** Lexical editor rich text content */
-  content: AcaraContent
+  /** Lexical editor rich text content OR rendered content array */
+  content: AcaraContent | RenderedContent
   /** Reference to category document ID */
-  category: string
+  category: string | AcaraCategory
   /** UTC timestamp when the document was created */
   createdAt: Date
   /** UTC timestamp when the document was last updated */
