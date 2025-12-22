@@ -1,20 +1,17 @@
-import { type EntitiSekolah, MARKER_GROUP, NEGERI, type PolygonCentroid } from '@types'
+import { type EntitiSekolah, MARKER_GROUP, NEGERI } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { env } from 'src/config/env.config'
-import { MalaysiaPolygonModel } from 'src/models'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 import type { GetNearbySchoolByLocation, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
+import { type CentroidCache } from 'src/services/centroid-cache.svc'
 import { calculateLocationCenter, getRadiusFromZoom, getZoomFromRadius, returnWithinRadius } from 'src/services/geometry.svc'
 import { groupingFromZoom, makeSchoolObject } from 'src/services/nearby.helper'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 import type { CreateSchoolBody } from '@/schemas'
-
-import { NegeriPolygonModel } from '../models/negeri-polygon.model'
-import { ParlimenPolygonModel } from '../models/parlimen-polygon.model'
 
 const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
 
@@ -65,6 +62,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
   }
 
   const grouping = groupingFromZoom(zoom)
+  const centroidCache = req.server.centroidCache
   const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
   const radius = Number(radiusConfig?.value ?? 100000)
   const effectiveRadius = radiusInMeter ?? radius
@@ -77,6 +75,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       effectiveRadius,
       grouping,
       viewInfoLokasi,
+      centroidCache,
     })
 
     if (response) {
@@ -94,6 +93,7 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       effectiveRadius,
       grouping,
       viewInfoLokasi,
+      centroidCache,
     })
     if (response) {
       return reply.send(createSuccessResponse(response))
@@ -195,6 +195,7 @@ async function groupByWestEastMalaysia(params: {
   longitude: number
   effectiveRadius: number
   name?: string
+  centroidCache: CentroidCache
 }) {
   const query = {
     'data.infoLokasi.location': {
@@ -228,11 +229,9 @@ async function groupByWestEastMalaysia(params: {
   ])
 
   const keys = westEastTotals.map(item => item._id)
-  const allCentroid = await MalaysiaPolygonModel.find().lean()
-  const centroidMap = new Map<string, PolygonCentroid>(allCentroid.map(item => [item.region as string, item.centroid as PolygonCentroid]))
 
   const markerGroups = keys.map(key => {
-    const centroid = centroidMap.get(key)
+    const centroid = params.centroidCache.malaysia[key]
     const centroidXX = centroid?.koordinatXX
     const centroidYY = centroid?.koordinatYY
     const total = westEastTotals.find(item => item._id === key)?.total
@@ -262,6 +261,7 @@ async function groupByNegeri(params: {
   longitude: number
   effectiveRadius: number
   name?: string
+  centroidCache: CentroidCache
 }) {
   const query = {
     'data.infoLokasi.location': {
@@ -283,13 +283,9 @@ async function groupByNegeri(params: {
   ])
 
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
-  const allCentroid = await NegeriPolygonModel.find().lean()
-  const negeriCentroidMap = new Map<string, PolygonCentroid>(
-    allCentroid.map(item => [item.negeri as string, item.centroid as PolygonCentroid]),
-  )
 
   const markerGroups = negeriKeys.map(negeriKey => {
-    const centroid = negeriCentroidMap.get(negeriKey)
+    const centroid = params.centroidCache.negeri[negeriKey]
     const centroidXX = centroid?.koordinatXX
     const centroidYY = centroid?.koordinatYY
     const total = negeriTotals.find(item => item._id === negeriKey)?.total
@@ -318,6 +314,7 @@ async function groupByParlimen(params: {
   longitude: number
   effectiveRadius: number
   name?: string
+  centroidCache: CentroidCache
 }) {
   const query = {
     'data.infoLokasi.location': {
@@ -338,19 +335,17 @@ async function groupByParlimen(params: {
     { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
   ])
 
-  const pQuery = Array.from(parlimenTotals).map(parlimen => ({ parlimen: parlimen._id }))
-  const parlimenPolygons = await ParlimenPolygonModel.find({ $or: pQuery }).lean()
-  const markerGroups = parlimenPolygons.map(polygon => {
-    const parlimen = polygon.parlimen as string
-    const centroid = polygon.centroid as PolygonCentroid
+  const parlimenKeys = Array.from(parlimenTotals).map(item => item._id)
+  const markerGroups = parlimenKeys.map(parlimenKey => {
+    const centroid = params.centroidCache.parlimen[parlimenKey]
     const centroidXX = centroid?.koordinatXX
     const centroidYY = centroid?.koordinatYY
-    const total = parlimenTotals.find(item => item._id === parlimen)?.total
+    const total = parlimenTotals.find(item => item._id === parlimenKey)?.total
 
     return {
       markerType: MARKER_GROUP.PARLIMEN,
-      negeri: polygon.negeri,
-      parlimen: parlimen,
+      negeri: undefined,
+      parlimen: parlimenKey,
       infoLokasi: {
         koordinatXX: centroidXX,
         koordinatYY: centroidYY,
@@ -374,6 +369,7 @@ async function searchByName(params: {
   effectiveRadius: number
   grouping: MARKER_GROUP
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
+  centroidCache: CentroidCache
 }) {
   const query = {
     namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' },
@@ -415,6 +411,7 @@ async function searchByName(params: {
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
       name: params.name,
+      centroidCache: params.centroidCache,
     })
     return response
   }
@@ -426,6 +423,7 @@ async function searchByName(params: {
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
       name: params.name,
+      centroidCache: params.centroidCache,
     })
     return response
   }
@@ -437,6 +435,7 @@ async function searchByName(params: {
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
       name: params.name,
+      centroidCache: params.centroidCache,
     })
     return response
   }
@@ -450,6 +449,7 @@ async function searchByRadius(params: {
   effectiveRadius: number
   grouping: MARKER_GROUP
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
+  centroidCache: CentroidCache
 }) {
   if (params.grouping === MARKER_GROUP.INDIVIDUAL) {
     const query = {
@@ -489,6 +489,7 @@ async function searchByRadius(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      centroidCache: params.centroidCache,
     })
     return response
   }
@@ -499,6 +500,7 @@ async function searchByRadius(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      centroidCache: params.centroidCache,
     })
     return response
   }
@@ -509,6 +511,7 @@ async function searchByRadius(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
+      centroidCache: params.centroidCache,
     })
     return response
   }
