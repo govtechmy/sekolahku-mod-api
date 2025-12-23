@@ -31,6 +31,7 @@ jobs:
           API_KEY: test-api-key
           DATAPROC_SERVICE_URL: http://localhost:8080
           DATA_URL: http://localhost:3000
+          S3_BUCKET_NAME: bucket
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
