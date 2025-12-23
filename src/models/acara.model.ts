@@ -23,12 +23,20 @@ const AcaraAttachmentSchema = new Schema<AcaraAttachment>(
 const AcaraSchema = new Schema<Acara>(
   {
     title: { type: String, required: true },
-    image: { type: String, required: true },
+    image: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'AcaraAttachment',
+      required: true 
+    },
     readTime: { type: Number, required: true },
     articleDate: { type: Date, required: true },
     attachments: { type: [AcaraAttachmentSchema], default: [] },
     content: { type: AcaraContentSchema, required: true },
-    category: { type: String, required: true },
+    category: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'AcaraCategory',
+      required: true 
+    },
   },
   {
     timestamps: true,

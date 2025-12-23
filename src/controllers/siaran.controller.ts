@@ -1,11 +1,45 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
-import { SiaranModel, SiaranAttachmentModel, SiaranCategoryModel } from 'src/models'
+import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import type { Siaran } from 'src/types'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 import { renderContent } from 'src/utils/content.utils'
+
+function processSiaranData(siaran: any, req: FastifyRequest): Siaran {
+  let updatedSiaran: Partial<Siaran> = { ...siaran }
+
+  // Handle populated image
+  if (siaran.image && typeof siaran.image === 'object' && 'filename' in siaran.image) {
+    updatedSiaran.image = (siaran.image as { filename: string }).filename
+  } else {
+    updatedSiaran.image = typeof siaran.image === 'string' ? siaran.image : ''
+  }
+
+  // Handle populated category
+  if (siaran.category && typeof siaran.category === 'object' && 'name' in siaran.category) {
+    updatedSiaran.category = (siaran.category as { name: string }).name
+  } else {
+    updatedSiaran.category = typeof siaran.category === 'string' ? siaran.category : ''
+  }
+
+  // Handle content rendering
+  if (siaran.content) {
+    try {
+      if (typeof siaran.content === 'object' && 'root' in siaran.content) {
+        const renderedContent = renderContent(siaran.content)
+        updatedSiaran.content = renderedContent
+      } else {
+        updatedSiaran.content = siaran.content
+      }
+    } catch (error) {
+      req.log.warn({ siaranId: siaran._id, error }, 'siaran:content:render-failed')
+    }
+  }
+
+  return updatedSiaran as Siaran
+}
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
   const { search, category, page, limit, sortBy, sortOrder } = req.query
@@ -23,57 +57,14 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
 
   const skip = (page - 1) * limit
   const siaranList = await SiaranModel.find(query)
+    .populate('image', 'filename')
+    .populate('category', 'name')
     .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
     .skip(skip)
     .limit(limit)
     .lean()
 
-  const populatedSiaranList = await Promise.all(
-    siaranList.map(async (siaran): Promise<Siaran> => {
-      let updatedSiaran: Partial<Siaran> = {
-        ...siaran,
-        image: typeof siaran.image === 'string' ? siaran.image : '',
-        category: typeof siaran.category === 'string' ? siaran.category : ''
-      }
-
-      if (siaran.image) {
-        try {
-          const imageData = await SiaranAttachmentModel.findById(siaran.image).lean()
-          if (imageData) {
-            updatedSiaran.image = imageData.filename
-          }
-        } catch (error) {
-          req.log.warn({ imageId: siaran.image, error }, 'siaran:image:lookup-failed')
-        }
-      }
-
-      if (siaran.category) {
-        try {
-          const categoryData = await SiaranCategoryModel.findById(siaran.category).lean()
-          if (categoryData) {
-            updatedSiaran.category = categoryData.name
-          }
-        } catch (error) {
-          req.log.warn({ categoryId: siaran.category, error }, 'siaran:category:lookup-failed')
-        }
-      }
-
-      if (siaran.content) {
-        try {
-          if (siaran.content && typeof siaran.content === 'object' && 'root' in siaran.content) {
-            const renderedContent = renderContent(siaran.content)
-            updatedSiaran.content = renderedContent
-          } else {
-            updatedSiaran.content = siaran.content
-          }
-        } catch (error) {
-          req.log.warn({ siaranId: siaran._id, error }, 'siaran:content:render-failed')
-        }
-      }
-
-      return updatedSiaran as Siaran
-    })
-  )
+  const populatedSiaranList = siaranList.map((siaran) => processSiaranData(siaran, req))
 
   const total = await SiaranModel.countDocuments(query)
 
@@ -98,53 +89,17 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     return rep.code(400).send(createErrorResponse('Invalid Siaran ID format', 'ERR_400', 400))
   }
 
-  const siaran = await SiaranModel.findById(id).lean()
+  const siaran = await SiaranModel.findById(id)
+    .populate('image', 'filename')
+    .populate('category', 'name')
+    .lean()
 
   if (!siaran) {
     req.log.warn({ id }, 'siaran:get:not-found')
     return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
   }
 
-  let populatedSiaran: Partial<Siaran> = {
-    ...siaran,
-    image: typeof siaran.image === 'string' ? siaran.image : '',
-    category: typeof siaran.category === 'string' ? siaran.category : ''
-  }
+  const populatedSiaran = processSiaranData(siaran, req)
 
-  if (siaran.image) {
-    try {
-      const imageData = await SiaranAttachmentModel.findById(siaran.image).lean()
-      if (imageData) {
-        populatedSiaran.image = imageData.filename
-      }
-    } catch (error) {
-      req.log.warn({ imageId: siaran.image, error }, 'siaran:image:lookup-failed')
-    }
-  }
-
-  if (siaran.category) {
-    try {
-      const categoryData = await SiaranCategoryModel.findById(siaran.category).lean()
-      if (categoryData) {
-        populatedSiaran.category = categoryData.name
-      }
-    } catch (error) {
-      req.log.warn({ categoryId: siaran.category, error }, 'siaran:category:lookup-failed')
-    }
-  }
-
-  if (siaran.content) {
-    try {
-      if (siaran.content && typeof siaran.content === 'object' && 'root' in siaran.content) {
-        const renderedContent = renderContent(siaran.content)
-        populatedSiaran.content = renderedContent
-      } else {
-        populatedSiaran.content = siaran.content
-      }
-    } catch (error) {
-      req.log.warn({ siaranId: siaran._id, error }, 'siaran:content:render-failed')
-    }
-  }
-
-  return rep.send(createSuccessResponse(populatedSiaran as Siaran))
+  return rep.send(createSuccessResponse(populatedSiaran))
 }

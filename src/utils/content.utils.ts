@@ -1,7 +1,7 @@
 import type { SiaranContent, AcaraContent, LexicalElementNode, LexicalTextNode, RenderedContent } from '@types'
 
 const hasChildren = (node: LexicalElementNode): node is LexicalElementNode & { children: (LexicalTextNode | LexicalElementNode)[] } => {
-    return 'children' in node && Array.isArray((node as any).children);
+    return 'children' in node && Array.isArray((node as { children?: unknown }).children);
 }
 
 export const renderContent = (content: SiaranContent | AcaraContent): RenderedContent => {

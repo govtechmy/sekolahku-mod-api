@@ -23,12 +23,20 @@ const SiaranAttachmentSchema = new Schema<SiaranAttachment>(
 const SiaranSchema = new Schema<Siaran>(
   {
     title: { type: String, required: true },
-    image: { type: String, required: true },
+    image: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'SiaranAttachment',
+      required: true 
+    },
     readTime: { type: Number, required: true },
     articleDate: { type: Date, required: true },
     attachments: { type: [SiaranAttachmentSchema], default: [] },
     content: { type: SiaranContentSchema, required: true },
-    category: { type: String, required: true },
+    category: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'SiaranCategory',
+      required: true 
+    },
   },
   {
     timestamps: true,
