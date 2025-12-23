@@ -37,16 +37,18 @@ function resolveCentroid(data: unknown): PolygonCentroid {
 async function loadCategory(s3: S3Service, keys: string[] | undefined, target: Record<string, PolygonCentroid>) {
   if (!Array.isArray(keys)) return
 
-  for (const key of keys) {
+  const promises = keys.map(async key => {
     const stream = await s3.getStreamObject(key)
     const content = await stream.Body?.transformToString()
-    if (!content) continue
+    if (!content) return
 
     const parsed = JSON.parse(content) as unknown
     const centroid = resolveCentroid(parsed)
     const name = extractNameFromKey(key)
     target[name] = centroid
-  }
+  })
+
+  await Promise.allSettled(promises)
 }
 
 export function getCentroidCache(): CentroidCache {
@@ -68,9 +70,11 @@ export async function loadCentroidCacheFromS3() {
   centroidCache.parlimen = {}
   centroidCache.malaysia = {}
 
-  await loadCategory(s3, index.negeri, centroidCache.negeri)
-  await loadCategory(s3, index.parlimen, centroidCache.parlimen)
-  await loadCategory(s3, index.malaysia, centroidCache.malaysia)
+  const promises = []
+  promises.push(loadCategory(s3, index.negeri, centroidCache.negeri))
+  promises.push(loadCategory(s3, index.parlimen, centroidCache.parlimen))
+  promises.push(loadCategory(s3, index.malaysia, centroidCache.malaysia))
+  await Promise.allSettled(promises)
 
   return centroidCache
 }
