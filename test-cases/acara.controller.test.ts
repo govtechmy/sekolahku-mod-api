@@ -9,9 +9,13 @@ import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 describe('acara controller', () => {
   beforeEach(() => {
     // Mock DB connection to prevent actual DB calls
-    mock.module('../src/config/db.config', () => ({
-      payloadConnection: {
-        model: mock(() => ({})),
+    mock.module('src/models/acara.model', () => ({
+      AcaraModel: {
+        find: mockedModel.find,
+        findById: mockedModel.findOne,
+        findOne: mockedModel.findOne,
+        create: mockedModel.create,
+        countDocuments: mockedModel.countDocuments,
       },
     }))
 
