@@ -181,6 +181,7 @@ describe('schools controller', () => {
       const mockReq = {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 10000 },
         log: { error: mock(() => ({})) },
+        server: { centroidCache: {} },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
       await getFindNearby(mockReq, mockReply)
@@ -232,6 +233,7 @@ describe('schools controller', () => {
       const mockReq = {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
         log: { error: mock(() => ({})) },
+        server: { centroidCache: {} },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
       await getFindNearby(mockReq, mockReply)
@@ -259,6 +261,7 @@ describe('schools controller', () => {
       const mockReq = {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
         log: { error: mock(() => ({})) },
+        server: { centroidCache: {} },
       } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
 
       await getFindNearby(mockReq, mockReply)
