@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, onSendHookHandler } from 'fastify'
 import type { GetNearbySchoolByLocation as GetFindNearby } from 'src/schemas/schools/request.schema'
 import { getNearbySchoolByLocationSchema } from 'src/schemas/schools/request.schema'
 
@@ -8,11 +8,17 @@ import { listSchoolsSearchQuerySchema } from '@/schemas'
 import { getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
+const setNoStoreCacheHeaders: onSendHookHandler = async (_, reply, payload) => {
+  reply.header('Cache-Control', 'private, max-age=0, must-revalidate')
+  return payload
+}
+
 export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/schools',
     {
       preHandler: authMiddleware,
+      onSend: [setNoStoreCacheHeaders],
       schema: {
         headers: authHeaderSchema,
         tags: ['Schools'],
@@ -41,6 +47,7 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
     '/schools/search',
     {
       preHandler: authMiddleware,
+      onSend: [setNoStoreCacheHeaders],
       schema: {
         headers: authHeaderSchema,
         tags: ['Schools'],
@@ -56,6 +63,7 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
     '/schools/find-nearby',
     {
       preHandler: authMiddleware,
+      onSend: [setNoStoreCacheHeaders],
       schema: {
         headers: authHeaderSchema,
         querystring: getNearbySchoolByLocationSchema,
