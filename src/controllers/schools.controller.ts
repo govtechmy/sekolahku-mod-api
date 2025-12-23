@@ -226,6 +226,7 @@ async function groupByWestEastMalaysia(params: {
       },
     },
     { $group: { _id: '$region', total: { $sum: '$total' } } },
+    { $sort: { _id: 1 } },
   ])
 
   const keys = westEastTotals.map(item => item._id)
@@ -275,7 +276,11 @@ async function groupByNegeri(params: {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
   }
 
-  const aggregate = [{ $match: query }, { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } }]
+  const aggregate = [
+    { $match: query },
+    { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]
   const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>(aggregate)
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
   const markerGroups = negeriKeys.map(negeriKey => {
@@ -327,6 +332,7 @@ async function groupByParlimen(params: {
       $match: query,
     },
     { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
   ])
 
   const parlimenKeys = Array.from(parlimenTotals).map(item => item._id)
