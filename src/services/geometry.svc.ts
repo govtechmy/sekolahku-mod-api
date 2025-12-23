@@ -69,6 +69,15 @@ export function returnWithinRadius(schools: EntitiSekolah[], longitude: number, 
   })
 }
 
+export function resolveGroupCoordinates(schools: EntitiSekolah[]) {
+  const coords = schools
+    .map(school => school.data.infoLokasi.location?.coordinates)
+    .filter((coord): coord is [number, number] => Array.isArray(coord))
+
+  const center = calculateLocationCenter(coords).center
+  return { koordinatXX: center[0], koordinatYY: center[1] }
+}
+
 export function getRadiusFromZoom(zoom: number, latitude: number): number {
   const earthCircumference = 40075016.686
 

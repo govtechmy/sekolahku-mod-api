@@ -6,7 +6,13 @@ import { SystemConfigModel } from 'src/models/system-config.model'
 import type { GetNearbySchoolByLocation, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
 import { type CentroidCache } from 'src/services/centroid-cache.svc'
-import { calculateLocationCenter, getRadiusFromZoom, getZoomFromRadius, returnWithinRadius } from 'src/services/geometry.svc'
+import {
+  calculateLocationCenter,
+  getRadiusFromZoom,
+  getZoomFromRadius,
+  resolveGroupCoordinates,
+  returnWithinRadius,
+} from 'src/services/geometry.svc'
 import { groupingFromZoom, makeSchoolObject } from 'src/services/nearby.helper'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -210,9 +216,7 @@ async function groupByWestEastMalaysia(params: {
   }
 
   const westEastTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
-    {
-      $match: query,
-    },
+    { $match: query },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
     {
       $addFields: {
@@ -226,7 +230,7 @@ async function groupByWestEastMalaysia(params: {
       },
     },
     { $group: { _id: '$region', total: { $sum: '$total' } } },
-    { $sort: { _id: 1 } },
+    { $sort: { _id: 1 as const } },
   ])
 
   const keys = westEastTotals.map(item => item._id)
@@ -279,7 +283,7 @@ async function groupByNegeri(params: {
   const aggregate = [
     { $match: query },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
-    { $sort: { _id: 1 } },
+    { $sort: { _id: 1 as const } },
   ]
   const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>(aggregate)
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
@@ -328,11 +332,9 @@ async function groupByParlimen(params: {
   }
 
   const parlimenTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
-    {
-      $match: query,
-    },
+    { $match: query },
     { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
-    { $sort: { _id: 1 } },
+    { $sort: { _id: 1 as const } },
   ])
 
   const parlimenKeys = Array.from(parlimenTotals).map(item => item._id)
@@ -417,26 +419,95 @@ async function searchByName(params: {
   }
 
   if (params.grouping === MARKER_GROUP.NEGERI) {
-    const response = await groupByNegeri({
-      viewInfoLokasi: params.viewInfoLokasi,
-      latitude: params.latitude,
-      longitude: params.longitude,
-      effectiveRadius: params.effectiveRadius,
-      name: params.name,
-      centroidCache: params.centroidCache,
+    const negeriGroups = new Map<string, EntitiSekolah[]>()
+    for (const school of schoolsWithinRadius) {
+      const negeriKey = school.data?.infoPentadbiran?.negeri
+      if (!negeriKey) continue
+      const grouped = negeriGroups.get(negeriKey) ?? []
+      grouped.push(school)
+      negeriGroups.set(negeriKey, grouped)
+    }
+
+    const markerGroups = Array.from(negeriGroups.entries()).flatMap(([negeriKey, groupedSchools]) => {
+      const coords = resolveGroupCoordinates(groupedSchools)
+      if (!coords) return []
+
+      return [
+        {
+          markerType: MARKER_GROUP.NEGERI,
+          negeri: negeriKey,
+          infoLokasi: {
+            koordinatXX: coords.koordinatXX,
+            koordinatYY: coords.koordinatYY,
+          },
+          total: groupedSchools.length,
+        },
+      ]
     })
+
+    if (markerGroups.length === 0) {
+      const response = await groupByNegeri({
+        viewInfoLokasi: params.viewInfoLokasi,
+        latitude: params.latitude,
+        longitude: params.longitude,
+        effectiveRadius: params.effectiveRadius,
+        name: params.name,
+        centroidCache: params.centroidCache,
+      })
+      return response
+    }
+
+    const response = {
+      viewInfoLokasi: params.viewInfoLokasi,
+      markerGroups,
+    } as FindNearbyResponse
     return response
   }
 
   if (params.grouping === MARKER_GROUP.PARLIMEN) {
-    const response = await groupByParlimen({
-      viewInfoLokasi: params.viewInfoLokasi,
-      latitude: params.latitude,
-      longitude: params.longitude,
-      effectiveRadius: params.effectiveRadius,
-      name: params.name,
-      centroidCache: params.centroidCache,
+    const parlimenGroups = new Map<string, EntitiSekolah[]>()
+    for (const school of schoolsWithinRadius) {
+      const parlimenKey = school.data?.infoPentadbiran?.parlimen
+      if (!parlimenKey) continue
+      const grouped = parlimenGroups.get(parlimenKey) ?? []
+      grouped.push(school)
+      parlimenGroups.set(parlimenKey, grouped)
+    }
+
+    const markerGroups = Array.from(parlimenGroups.entries()).flatMap(([parlimenKey, groupedSchools]) => {
+      const coords = resolveGroupCoordinates(groupedSchools)
+      if (!coords) return []
+
+      return [
+        {
+          markerType: MARKER_GROUP.PARLIMEN,
+          negeri: undefined,
+          parlimen: parlimenKey,
+          infoLokasi: {
+            koordinatXX: coords.koordinatXX,
+            koordinatYY: coords.koordinatYY,
+          },
+          total: groupedSchools.length,
+        },
+      ]
     })
+
+    if (markerGroups.length === 0) {
+      const response = await groupByParlimen({
+        viewInfoLokasi: params.viewInfoLokasi,
+        latitude: params.latitude,
+        longitude: params.longitude,
+        effectiveRadius: params.effectiveRadius,
+        name: params.name,
+        centroidCache: params.centroidCache,
+      })
+      return response
+    }
+
+    const response = {
+      viewInfoLokasi: params.viewInfoLokasi,
+      markerGroups,
+    } as FindNearbyResponse
     return response
   }
 
