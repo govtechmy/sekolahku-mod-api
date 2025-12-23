@@ -276,12 +276,11 @@ async function groupByNegeri(params: {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
   }
 
-  const aggregate = [
+  const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
     { $match: query },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
     { $sort: { _id: 1 } },
-  ]
-  const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>(aggregate)
+  ])
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
   const markerGroups = negeriKeys.map(negeriKey => {
     const centroid = params.centroidCache.negeri[negeriKey]
