@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "sekolahku-mod-api",
@@ -10,6 +9,7 @@
         "@aws-sdk/s3-request-presigner": "^3.957.0",
         "@fastify/compress": "^8.1.0",
         "@fastify/cors": "^11.1.0",
+        "@fastify/etag": "^6.1.0",
         "@fastify/helmet": "^13.0.1",
         "@fastify/swagger": "^9.5.1",
         "@fastify/swagger-ui": "^5.2.3",
@@ -158,6 +158,8 @@
     "@fastify/cors": ["@fastify/cors@11.2.0", "", { "dependencies": { "fastify-plugin": "^5.0.0", "toad-cache": "^3.7.0" } }, "sha512-LbLHBuSAdGdSFZYTLVA3+Ch2t+sA6nq3Ejc6XLAKiQ6ViS2qFnvicpj0htsx03FyYeLs04HfRNBsz/a8SvbcUw=="],
 
     "@fastify/error": ["@fastify/error@4.2.0", "", {}, "sha512-RSo3sVDXfHskiBZKBPRgnQTtIqpi/7zhJOEmAxCiBcM7d0uwdGdxLlsCaLzGs8v8NnxIRlfG0N51p5yFaOentQ=="],
+
+    "@fastify/etag": ["@fastify/etag@6.1.0", "", { "dependencies": { "fastify-plugin": "^5.0.0" } }, "sha512-95fxJ1YHSh1p76+tXyFvluy/H1G1Z+f7fSlv8CQxAFCuGIr/DgtwAYAfZIG//WuKZ7UB4TBLJOX14ZaIPqEirQ=="],
 
     "@fastify/fast-json-stringify-compiler": ["@fastify/fast-json-stringify-compiler@5.0.3", "", { "dependencies": { "fast-json-stringify": "^6.0.0" } }, "sha512-uik7yYHkLr6fxd8hJSZ8c+xF4WafPK+XzneQDPU+D10r5X19GW8lJcom2YijX2+qtFF1ENJlHXKFM9ouXNJYgQ=="],
 
