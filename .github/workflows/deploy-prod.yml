@@ -2,7 +2,7 @@ name: Deploy to AWS ECS Development
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   deploy:
@@ -64,8 +64,8 @@ jobs:
         run: |
           # Get the current task definition ARN from the service
           TASK_DEF_ARN=$(aws ecs describe-services \
-            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
-            --services ${{ secrets.ECS_SERVICE_DEV }} \
+            --cluster ${{ secrets.ECS_CLUSTER_PROD }} \
+            --services ${{ secrets.ECS_SERVICE_PROD }} \
             --query 'services[0].taskDefinition' \
             --output text)
           
@@ -108,8 +108,8 @@ jobs:
         run: |
           # Update the service with the new task definition
           aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
-            --service ${{ secrets.ECS_SERVICE_DEV }} \
+            --cluster ${{ secrets.ECS_CLUSTER_PROD }} \
+            --service ${{ secrets.ECS_SERVICE_PROD }} \
             --task-definition ${{ steps.register-task-def.outputs.task-definition-arn }} \
             --force-new-deployment \
             --query 'service.serviceArn' \
@@ -117,5 +117,5 @@ jobs:
 
           # Wait for service stability
           aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
-            --services ${{ secrets.ECS_SERVICE_DEV }}
+            --cluster ${{ secrets.ECS_CLUSTER_PROD }} \
+            --services ${{ secrets.ECS_SERVICE_PROD }}
