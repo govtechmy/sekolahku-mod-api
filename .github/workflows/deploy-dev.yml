@@ -114,8 +114,3 @@ jobs:
             --force-new-deployment \
             --query 'service.serviceArn' \
             --output text
-
-          # Wait for service stability
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
-            --services ${{ secrets.ECS_SERVICE_DEV }}
