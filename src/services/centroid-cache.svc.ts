@@ -20,6 +20,8 @@ const centroidCache: CentroidCache = {
   malaysia: {},
 }
 
+const CENTROID_PREFIX = 'centroid/'
+
 function extractNameFromKey(key: string) {
   const parts = key.split('/')
   const filename = parts[parts.length - 1] ?? key
@@ -38,13 +40,14 @@ async function loadCategory(s3: S3Service, keys: string[] | undefined, target: R
   if (!Array.isArray(keys)) return
 
   const promises = keys.map(async key => {
-    const stream = await s3.getStreamObject(key)
+    const s3Key = key.startsWith(CENTROID_PREFIX) ? key : `${CENTROID_PREFIX}${key}`
+    const stream = await s3.getStreamObject(s3Key)
     const content = await stream.Body?.transformToString()
     if (!content) return
 
     const parsed = JSON.parse(content) as unknown
     const centroid = resolveCentroid(parsed)
-    const name = extractNameFromKey(key)
+    const name = extractNameFromKey(s3Key)
     target[name] = centroid
   })
 
@@ -75,6 +78,5 @@ export async function loadCentroidCacheFromS3() {
   promises.push(loadCategory(s3, index.parlimen, centroidCache.parlimen))
   promises.push(loadCategory(s3, index.malaysia, centroidCache.malaysia))
   await Promise.allSettled(promises)
-
   return centroidCache
 }
