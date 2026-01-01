@@ -372,18 +372,32 @@ async function searchByName(params: {
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   centroidCache: CentroidCache
 }) {
-  const query = {
-    namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' },
-  }
-  const foundSchools = await EntitiSekolahModel.find(query).lean<EntitiSekolah[]>()
-  const schoolsWithinRadius = returnWithinRadius(foundSchools, params.longitude, params.latitude, params.effectiveRadius)
+  // const query = {
+  //   namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' },
+  // }
+  // const foundSchools = await EntitiSekolahModel.find(query).lean<EntitiSekolah[]>()
+  // const schoolsWithinRadius = returnWithinRadius(foundSchools, params.longitude, params.latitude, params.effectiveRadius)
 
-  if (!Array.isArray(schoolsWithinRadius) || schoolsWithinRadius.length === 0) {
-    return null
+  const query = {
+    'data.infoLokasi.location': {
+      $geoWithin: {
+        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
+      },
+    },
   }
+
+  if (params.name) {
+    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
+  }
+
+  const foundSchools = await EntitiSekolahModel.aggregate<EntitiSekolah>([{ $match: query }, { $sort: { _id: 1 as const } }])
+
+  // if (!Array.isArray(schoolsWithinRadius) || schoolsWithinRadius.length === 0) {
+  //   return null
+  // }
 
   if (params.grouping === MARKER_GROUP.INDIVIDUAL) {
-    const markerGroups = schoolsWithinRadius.map(school => {
+    const markerGroups = foundSchools.map(school => {
       const item = makeSchoolObject(school, env.DATA_URL)
       return {
         markerType: MARKER_GROUP.INDIVIDUAL,
@@ -419,7 +433,7 @@ async function searchByName(params: {
 
   if (params.grouping === MARKER_GROUP.NEGERI) {
     const negeriGroups = new Map<string, EntitiSekolah[]>()
-    for (const school of schoolsWithinRadius) {
+    for (const school of foundSchools) {
       const negeriKey = school.data?.infoPentadbiran?.negeri
       if (!negeriKey) continue
       const grouped = negeriGroups.get(negeriKey) ?? []
@@ -465,7 +479,7 @@ async function searchByName(params: {
 
   if (params.grouping === MARKER_GROUP.PARLIMEN) {
     const parlimenGroups = new Map<string, EntitiSekolah[]>()
-    for (const school of schoolsWithinRadius) {
+    for (const school of foundSchools) {
       const parlimenKey = school.data?.infoPentadbiran?.parlimen
       if (!parlimenKey) continue
       const grouped = parlimenGroups.get(parlimenKey) ?? []
