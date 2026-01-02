@@ -1,7 +1,7 @@
 import { type EntitiSekolah, MARKER_GROUP } from '@types'
 
 export function groupingFromZoom(zoom: number): MARKER_GROUP {
-  // if (zoom <= 7) return MARKER_GROUP.WEST_EAST_MALAYSIA
+  if (zoom <= 7) return MARKER_GROUP.WEST_EAST_MALAYSIA
   // if (zoom > 7 && zoom <= 9) return MARKER_GROUP.NEGERI
   if (zoom <= 9) return MARKER_GROUP.NEGERI
   if (zoom > 9 && zoom <= 12) return MARKER_GROUP.PARLIMEN
