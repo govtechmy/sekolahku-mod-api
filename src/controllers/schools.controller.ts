@@ -114,3 +114,16 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     return reply.code(500).send(errResponse)
   }
 }
+
+export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyReply) {
+  try {
+    //to get school-type from schools.data.infoSekolah.jenisLabel
+    const schoolTypes = await EntitiSekolahModel.distinct('data.infoSekolah.jenisLabel').lean()
+    return reply.send(createSuccessResponse(schoolTypes))
+  } catch (error) {
+    req.log.error({ err: error }, 'schools:get-school-types:error')
+    const errResponse = createErrorResponse('Failed to fetch school types. Please try again later.', 'ERR_500', 500)
+    return reply.code(500).send(errResponse)
+  }
+}
+

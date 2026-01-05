@@ -1,9 +1,9 @@
 import type { FastifyInstance, onSendHookHandler } from 'fastify'
 
-import { authHeaderSchema, type ListSchoolsSearchQuery } from '@/schemas'
+import { authHeaderSchema, type ListSchoolsSearchQuery, schoolTypesResponseSchema } from '@/schemas'
 import { listSchoolsSearchQuerySchema } from '@/schemas'
 
-import { getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
+import { getFilterSchoolType, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 const setNoStoreCacheHeaders: onSendHookHandler = async (_, reply, payload) => {
@@ -55,5 +55,23 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
       },
     },
     getSchoolsSearchSuggestion,
+  )
+
+  app.get(
+    '/schools/filter/school-type',
+    {
+      preHandler: authMiddleware,
+      onSend: [setNoStoreCacheHeaders],
+      schema: {
+        headers: authHeaderSchema,
+        response: {
+          200: schoolTypesResponseSchema,
+        },
+        tags: ['Schools'],
+        summary: 'schools type filter',
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
+      },
+    },
+    getFilterSchoolType,
   )
 }
