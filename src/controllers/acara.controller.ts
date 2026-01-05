@@ -27,10 +27,11 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
     .lean()
 
   const total = await AcaraModel.countDocuments(query)
-
+  const imageSvc = new ImageService()
   const imageIds = acaraList.map(acara => acara.image).filter(img => img) as string[]
+  const attachmentIds = acaraList.flatMap(acr => acr.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+
   if (imageIds.length > 0) {
-    const imageSvc = new ImageService()
     const imageList = await imageSvc.listImages(imageIds)
     const imageMap = new Map(imageList.map(img => [img._id.toString(), img]))
 
@@ -38,6 +39,22 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
       if (acara.image) {
         const image = imageMap.get(acara.image.toString())
         Object.assign(acara, { imageHero: image })
+      }
+    })
+  }
+
+  if (attachmentIds.length > 0) {
+    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
+
+    acaraList.forEach(acr => {
+      if (acr.attachments && acr.attachments.length > 0) {
+        acr.attachments.forEach(att => {
+          if (att.image) {
+            const attImage = attachmentImageMap.get(att.image.toString())
+            Object.assign(att, { ...attImage })
+          }
+        })
       }
     })
   }
@@ -63,11 +80,25 @@ export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdPar
     return rep.code(400).send(createErrorResponse('Invalid Acara ID format', 'ERR_400', 400))
   }
 
+  const imageSvc = new ImageService()
   const acara = await AcaraModel.findById(id).lean()
+
   if (acara?.image) {
-    const imageSvc = new ImageService()
     const imageList = await imageSvc.listImages([acara.image])
     Object.assign(acara, { imageHero: imageList[0] })
+  }
+
+  if (acara?.attachments && acara?.attachments?.length > 0) {
+    const attachmentIds = acara.attachments.map(att => att.image).filter(img => img) as string[]
+    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
+
+    acara.attachments.forEach(att => {
+      if (att.image) {
+        const attImage = attachmentImageMap.get(att.image.toString())
+        Object.assign(att, { ...attImage })
+      }
+    })
   }
 
   if (!acara) {

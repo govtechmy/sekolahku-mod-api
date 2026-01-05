@@ -1,5 +1,5 @@
 import compress from '@fastify/compress'
-import etag from '@fastify/etag'
+// import etag from '@fastify/etag'
 import type { FastifyInstance } from 'fastify'
 
 import { registerCentroidPlugin } from './centroid.plugin'
