@@ -5,6 +5,11 @@ Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Get Siaran By ID
-GET {{url}}/siaran/692ea5f9dd234d3211c80753
+GET {{url}}/siaran/{{siaranId}}
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get Siaran Categories
+GET http://localhost:3000/siaran/categories
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

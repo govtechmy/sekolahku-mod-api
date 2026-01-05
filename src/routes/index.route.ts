@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { payloadConnection, sekolahkuConnection } from '../config/db.config'
 import { registerAcaraRoutes } from './acara.route'
 import { registerAnalitikRoutes } from './analitik.route'
+import { registerCategoriesRoutes } from './categories.route'
 import { registerMapRoutes } from './map.route'
 import { registerRevalidateRoute } from './revalidate.route'
 import { registerSchoolRoutes } from './schools.routes'
@@ -31,4 +32,5 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await registerSiaranRoutes(app)
   await registerAcaraRoutes(app)
   await registerAnalitikRoutes(app)
+  await registerCategoriesRoutes(app)
 }

@@ -1,0 +1,9 @@
+### Get All Categories
+GET http://localhost:3000/categories
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get Category By ID
+GET http://localhost:3000/categories/{{categoriesId}}
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

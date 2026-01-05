@@ -334,6 +334,14 @@ export interface Acara {
   updatedAt: Date
 }
 
+export interface Categories {
+  name: string
+  value: string
+  colors: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface SystemConfig {
   key: string
   value: unknown

@@ -109,3 +109,9 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
 
   return rep.send(createSuccessResponse(siaran))
 }
+
+export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply) {
+  const categories = await SiaranModel.distinct('category')
+
+  return rep.send(createSuccessResponse(categories))
+}
