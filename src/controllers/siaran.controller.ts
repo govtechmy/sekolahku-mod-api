@@ -7,7 +7,7 @@ import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
-  const { search, category, page, limit, sortBy, sortOrder } = req.query
+  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query
   const query: Record<string, unknown> = {}
 
   // Search in title field only
@@ -20,11 +20,11 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     query.category = category
   }
 
-  const skip = (page - 1) * limit
+  const skip = (page - 1) * pageSize
   const siaranList = await SiaranModel.find(query)
     .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
     .skip(skip)
-    .limit(limit)
+    .limit(pageSize)
     .lean()
 
   const total = await SiaranModel.countDocuments(query)
@@ -64,7 +64,7 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     items: siaranList,
     totalRecords: total,
     pageNumber: page,
-    pageSize: limit,
+    pageSize,
   })
 
   return rep.send(response)

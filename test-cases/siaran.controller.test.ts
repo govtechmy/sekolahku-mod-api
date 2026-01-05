@@ -35,7 +35,7 @@ describe('siaran controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { page: 1, limit: 10 },
+        query: { page: 1, pageSize: 10 },
       } as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
@@ -63,7 +63,7 @@ describe('siaran controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { search: 'Test', page: 1, limit: 10 },
+        query: { search: 'Test', page: 1, pageSize: 10 },
       } as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
@@ -91,7 +91,7 @@ describe('siaran controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { category: 'news', page: 1, limit: 10 },
+        query: { category: 'news', page: 1, pageSize: 10 },
       } as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)

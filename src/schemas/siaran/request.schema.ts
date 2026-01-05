@@ -12,7 +12,7 @@ export const listSiaransQuerySchema = z.object({
   search: z.string().optional(), // Search in title field
   category: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
+  pageSize: z.coerce.number().int().positive().max(100).default(12),
   sortBy: z.enum(['articleDate', 'createdAt', 'updatedAt', 'title']).default('articleDate'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
