@@ -1,10 +1,11 @@
-@url = http://localhost:3000
+# @url = http://localhost:3000
+@url = https://sekolahku-api.govtechmy.xyz
 
 GET {{url}}/siaran
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Get Siaran By ID
-GET {{url}}/siaran/692ea5f9dd234d3211c80753
+GET {{url}}/siaran/695b4efb849ebb4271555e4f
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

@@ -14,6 +14,6 @@ export async function registerAllPlugins(app: FastifyInstance, isProduction: boo
   await registerSecurityPlugins(app, isProduction)
   await registerSwaggerPlugins(app)
   await app.register(compress, { global: true })
-  await app.register(etag)
+  // await app.register(etag)
   registerRequestLogging(app)
 }
