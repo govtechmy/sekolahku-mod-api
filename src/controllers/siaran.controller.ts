@@ -7,8 +7,10 @@ import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
-  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query
+  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query as ListSiaransQuery
   const query: Record<string, unknown> = {}
+  const cachedCategories = req.server.categoriesCache
+  const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
 
   // Search in title field only
   if (search?.trim()) {
@@ -60,6 +62,15 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     })
   }
 
+  siaranList.forEach(siaran => {
+    if (siaran.category) {
+      const categoryDetails = categoryMap.get(siaran.category.toString())
+      if (categoryDetails) {
+        Object.assign(siaran, { categoryDetails })
+      }
+    }
+  })
+
   const response = createSuccessResponse({
     items: siaranList,
     totalRecords: total,
@@ -84,6 +95,11 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   const imageSvc = new ImageService()
   const siaran = await SiaranModel.findById(id).lean()
 
+  if (!siaran) {
+    req.log.warn({ id }, 'siaran:get:not-found')
+    return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+  }
+
   if (siaran?.image) {
     const imageList = await imageSvc.listImages([siaran.image])
     Object.assign(siaran, { imageHero: imageList[0] })
@@ -102,9 +118,12 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     })
   }
 
-  if (!siaran) {
-    req.log.warn({ id }, 'siaran:get:not-found')
-    return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+  if (siaran.category) {
+    const cachedCategories = req.server.categoriesCache
+    const categoryDetails = cachedCategories.find(cat => cat._id?.toString() === siaran.category.toString())
+    if (categoryDetails) {
+      Object.assign(siaran, { categoryDetails })
+    }
   }
 
   return rep.send(createSuccessResponse(siaran))
