@@ -1,8 +1,10 @@
-GET http://localhost:3000/siaran
+@url = http://localhost:3000
+
+GET {{url}}/siaran
 Content-Type: application/json
-Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Get Siaran By ID
-GET http://localhost:3000/siaran/692ea2ce0bc6882a56cd116b
+GET {{url}}/siaran/692ea5f9dd234d3211c80753
 Content-Type: application/json
-Sekolahku-X-Api-Key: 5spZnKioKBnzoDnVwPf4Ys+4fVJouspU8H1dfsXXzjg
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

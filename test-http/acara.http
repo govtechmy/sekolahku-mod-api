@@ -1,14 +1,16 @@
+@url = http://localhost:3000
+
 ### Get all Acara
-GET http://localhost:3000/acara
+GET {{url}}/acara
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Get Acara By ID
-GET http://localhost:3000/acara/692ea8cd66db544aa4fe503b
+GET {{url}}/acara/692eaaa3cda530d43888c77c
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Search Acara
-GET http://localhost:3000/acara?search=Kanak
+GET {{url}}/acara?search=Kanak
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
