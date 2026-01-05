@@ -32,6 +32,8 @@ jobs:
           DATAPROC_SERVICE_URL: http://localhost:8080
           DATA_URL: http://localhost:3000
           S3_BUCKET_NAME: bucket
+          CMS_URL: http://localhost:3001
+          CMS_IMAGES_PATH: api/articles-media/file
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
