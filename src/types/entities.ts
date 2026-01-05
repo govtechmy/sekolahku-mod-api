@@ -340,3 +340,16 @@ export interface SystemConfig {
   description?: string
   updatedAt: Date
 }
+
+export interface ArticleMedia {
+  alt: string
+  filename: string
+  mimeType: number
+  filesize: Date
+  width: number
+  height: number
+  focalX: number
+  focalY: number
+  createdAt: Date
+  updatedAt: Date
+}

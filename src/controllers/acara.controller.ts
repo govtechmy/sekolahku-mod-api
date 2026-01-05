@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { AcaraModel } from 'src/models'
 import type { GetAcaraByIdParams, ListAcarasQuery } from 'src/schemas/acara'
+import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -27,6 +28,20 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
 
   const total = await AcaraModel.countDocuments(query)
 
+  const imageIds = acaraList.map(acara => acara.image).filter(img => img) as string[]
+  if (imageIds.length > 0) {
+    const imageSvc = new ImageService()
+    const imageList = await imageSvc.listImages(imageIds)
+    const imageMap = new Map(imageList.map(img => [img._id.toString(), img]))
+
+    acaraList.forEach(acara => {
+      if (acara.image) {
+        const image = imageMap.get(acara.image.toString())
+        Object.assign(acara, { imageHero: image })
+      }
+    })
+  }
+
   const response = createSuccessResponse({
     items: acaraList,
     totalRecords: total,
@@ -49,6 +64,11 @@ export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdPar
   }
 
   const acara = await AcaraModel.findById(id).lean()
+  if (acara?.image) {
+    const imageSvc = new ImageService()
+    const imageList = await imageSvc.listImages([acara.image])
+    Object.assign(acara, { imageHero: imageList[0] })
+  }
 
   if (!acara) {
     req.log.warn({ id }, 'acara:get:not-found')

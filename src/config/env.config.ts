@@ -23,6 +23,8 @@ const EnvSchema = z.object({
         .filter(t => t.length > 0)
     }),
   DATA_URL: z.string().url(),
+  CMS_URL: z.string().min(1),
+  CMS_IMAGES_PATH: z.string().min(1),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -37,6 +39,8 @@ function mapSecrets(secrets: Record<string, unknown>) {
     MULTIPLE_ORIGINS: secrets.MULTIPLE_ORIGINS,
     DATA_URL: secrets.DATA_URL,
     S3_BUCKET_NAME: secrets.S3_BUCKET_NAME,
+    CMS_URL: secrets.CMS_URL,
+    CMS_IMAGES_PATH: secrets.CMS_IMAGES_PATH,
   }
 }
 
