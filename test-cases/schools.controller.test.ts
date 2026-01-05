@@ -4,7 +4,8 @@ import { MalaysiaPolygonModel } from 'src/models'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 
-import { createSchool, getFindNearby, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
+import { getFindNearby } from '../src/controllers/map.controller'
+import { createSchool, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
 import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
