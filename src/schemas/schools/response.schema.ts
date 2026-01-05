@@ -1,4 +1,4 @@
-import { MARKER_GROUP } from '@types'
+import { MARKER_GROUP, RESPONSE_STATUS } from '@types'
 import { z } from 'zod'
 
 const ViewInfoLokasiSchema = z.object({
@@ -27,4 +27,12 @@ export const FindNearbyResponseSchema = z.object({
   markerGroups: z.array(MarkerGroupItemSchema),
 })
 
+export const schoolTypesResponseSchema = z.object({
+  status: z.literal(RESPONSE_STATUS.SUCCESS),
+  statusCode: z.number(),
+  data: z.array(z.string()),
+})
+
 export type FindNearbyResponse = z.infer<typeof FindNearbyResponseSchema>
+
+export type SchoolTypesResponse = z.infer<typeof schoolTypesResponseSchema>

@@ -5,7 +5,13 @@ import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
 
 import { getFindNearby } from '../src/controllers/map.controller'
-import { createSchool, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../src/controllers/schools.controller'
+import {
+  createSchool,
+  getFilterSchoolType,
+  getSchoolById,
+  getSchoolsSearchSuggestion,
+  listSchools,
+} from '../src/controllers/schools.controller'
 import type { CreateSchoolBody, GetNearbySchoolByLocation, ListSchoolsSearchQuery } from '../src/schemas'
 import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
@@ -46,6 +52,7 @@ describe('schools controller', () => {
     EntitiSekolahModel.findOne = mockedModel.findOne
     EntitiSekolahModel.create = mockedModel.create
     EntitiSekolahModel.countDocuments = mockedModel.countDocuments
+    EntitiSekolahModel.distinct = mockedModel.distinct
 
     MalaysiaPolygonModel.find = mock(() => Promise.resolve({})) as unknown as typeof MalaysiaPolygonModel.findOne
     SystemConfigModel.findOne = mock(() => Promise.resolve({ value: '10000' })) as unknown as typeof SystemConfigModel.findOne
@@ -381,6 +388,87 @@ describe('schools controller', () => {
         error: {
           code: 'ERR_500',
           message: 'Failed to fetch school search suggestions. Please try again later.',
+          details: {},
+        },
+      })
+    })
+  })
+
+  describe('getFilterSchoolType', () => {
+    test('should return list of school types', async () => {
+      const mockSchoolTypes = ['Sekolah Rendah', 'Sekolah Menengah', 'Sekolah Jenis Kebangsaan (Cina)', 'Sekolah Jenis Kebangsaan (Tamil)']
+      const mockDistinct = {
+        lean: mock(() => Promise.resolve(mockSchoolTypes)),
+      }
+      EntitiSekolahModel.distinct = mock(() => mockDistinct) as unknown as typeof EntitiSekolahModel.distinct
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest
+
+      await getFilterSchoolType(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.distinct).toHaveBeenCalledWith('data.infoSekolah.jenisLabel')
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: mockSchoolTypes,
+      })
+    })
+
+    test('should return empty array if no school types found', async () => {
+      const mockDistinct = {
+        lean: mock(() => Promise.resolve([])),
+      }
+      EntitiSekolahModel.distinct = mock(() => mockDistinct) as unknown as typeof EntitiSekolahModel.distinct
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest
+
+      await getFilterSchoolType(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.distinct).toHaveBeenCalledWith('data.infoSekolah.jenisLabel')
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: [],
+      })
+    })
+
+    test('should handle error and return 500', async () => {
+      const mockDistinct = {
+        lean: mock(() => Promise.reject(new Error('DB error'))),
+      }
+      EntitiSekolahModel.distinct = mock(() => mockDistinct) as unknown as typeof EntitiSekolahModel.distinct
+
+      const mockReply = {
+        code: mock(() => mockReply),
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest
+
+      await getFilterSchoolType(mockReq, mockReply)
+
+      expect(mockReply.code).toHaveBeenCalledWith(500)
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'ERROR',
+        statusCode: 500,
+        data: null,
+        error: {
+          code: 'ERR_500',
+          message: 'Failed to fetch school types. Please try again later.',
           details: {},
         },
       })

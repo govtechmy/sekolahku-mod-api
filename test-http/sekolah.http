@@ -11,3 +11,8 @@ Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 GET http://localhost:3000/schools/ABA0001
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+###
+GET  http://localhost:3000/schools/filter/school-type
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
