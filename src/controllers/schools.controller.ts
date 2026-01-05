@@ -126,4 +126,3 @@ export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyRep
     return reply.code(500).send(errResponse)
   }
 }
-
