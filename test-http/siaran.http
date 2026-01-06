@@ -1,4 +1,5 @@
-@url = http://localhost:3000
+# @url = http://localhost:3000
+@url = https://sekolahku-api.govtechmy.xyz
 
 GET {{url}}/siaran
 Content-Type: application/json

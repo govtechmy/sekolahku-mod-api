@@ -1,13 +1,21 @@
-GET http://localhost:3000/schools/find-nearby?latitude=4.9&longitude=100.4&radiusInMeter=10000
+# @url = http://localhost:3000
+@url = https://sekolahku-api.govtechmy.xyz
+
+GET {{url}}/schools/find-nearby?latitude=4.9&longitude=100.4&radiusInMeter=10000
 Content-Type: application/json  
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ###
-GET http://localhost:3000/schools/search?latitude=3.139&longitude=101.686&radiusInMeter=500
+GET {{url}}/schools/search?latitude=3.139&longitude=101.686&radiusInMeter=500
 Content-Type: application/json  
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ###
-GET http://localhost:3000/schools/ABA0001
+GET {{url}}/schools/ABA0001
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+###
+GET  {{url}}/schools/filter/school-type
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

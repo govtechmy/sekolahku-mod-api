@@ -1,5 +1,5 @@
 import compress from '@fastify/compress'
-import etag from '@fastify/etag'
+// import etag from '@fastify/etag'
 import type { FastifyInstance } from 'fastify'
 
 import { registerCategoriesPlugin } from './categories.plugin'
@@ -16,6 +16,6 @@ export async function registerAllPlugins(app: FastifyInstance, isProduction: boo
   await registerSecurityPlugins(app, isProduction)
   await registerSwaggerPlugins(app)
   await app.register(compress, { global: true })
-  await app.register(etag)
+  // await app.register(etag)
   registerRequestLogging(app)
 }
