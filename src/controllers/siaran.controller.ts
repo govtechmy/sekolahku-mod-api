@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
+import type { SiaranListItem } from 'src/schemas/siaran/response.schema'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -23,11 +24,50 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   }
 
   const skip = (page - 1) * pageSize
-  const siaranList = await SiaranModel.find(query)
+  const queryResult = await SiaranModel.find(query)
     .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
     .skip(skip)
     .limit(pageSize)
     .lean()
+
+  const siaranList: SiaranListItem[] = []
+  queryResult.forEach(siaran => {
+    const item = {
+      _id: siaran._id.toString(),
+      createdAt: siaran.createdAt,
+      updatedAt: siaran.updatedAt,
+      title: siaran.title,
+      image: siaran.image.toString(),
+      readTime: siaran.readTime,
+      articleDate: siaran.articleDate,
+      content: siaran.content,
+      category: siaran.category.toString(),
+      __v: siaran.__v,
+    } as SiaranListItem
+
+    if (siaran.attachments && siaran.attachments.length > 0) {
+      item.attachments = siaran.attachments.map(att => ({
+        ...att,
+        image: att.image?.toString(),
+      }))
+    }
+
+    if (item.category) {
+      const categoryDetails = categoryMap.get(item.category)
+      if (categoryDetails) {
+        item.categoryDetails = {
+          _id: categoryDetails._id.toString(),
+          name: categoryDetails.name,
+          value: categoryDetails.value,
+          colors: categoryDetails.colors,
+          createdAt: categoryDetails.createdAt,
+          updatedAt: categoryDetails.updatedAt,
+        }
+      }
+    }
+
+    siaranList.push(item)
+  })
 
   const total = await SiaranModel.countDocuments(query)
   const imageSvc = new ImageService()
@@ -62,20 +102,11 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     })
   }
 
-  siaranList.forEach(siaran => {
-    if (siaran.category) {
-      const categoryDetails = categoryMap.get(siaran.category.toString())
-      if (categoryDetails) {
-        Object.assign(siaran, { categoryDetails })
-      }
-    }
-  })
-
   const response = createSuccessResponse({
     items: siaranList,
     totalRecords: total,
     pageNumber: page,
-    pageSize,
+    pageSize: pageSize,
   })
 
   return rep.send(response)
@@ -132,5 +163,7 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
 export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply) {
   const categories = await SiaranModel.distinct('category')
 
-  return rep.send(createSuccessResponse(categories))
+  const categoriesAsStrings = categories.map(cat => cat.toString())
+
+  return rep.send(createSuccessResponse(categoriesAsStrings))
 }

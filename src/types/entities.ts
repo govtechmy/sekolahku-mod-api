@@ -335,7 +335,7 @@ export interface Acara {
 }
 
 export interface Categories {
-  _id?: string
+  _id: string
   name: string
   value: string
   colors: string

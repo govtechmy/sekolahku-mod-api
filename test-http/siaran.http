@@ -4,8 +4,13 @@ GET {{url}}/siaran
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
+### Search siaran
+GET {{url}}/siaran?search=Penangguhan
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
 ### Get Siaran By ID
-GET {{url}}/siaran/{{siaranId}}
+GET {{url}}/siaran/{{SiaranID}}
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
