@@ -1,7 +1,7 @@
-# @url = http://localhost:3000
-@url = https://sekolahku-api.govtechmy.xyz
+@url = http://localhost:3000
+# @url = https://sekolahku-api.govtechmy.xyz
 
-GET {{url}}/siaran
+GET {{url}}/siaran?category=berita&startDate=2025-12-01&endDate=2025-12-02
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 

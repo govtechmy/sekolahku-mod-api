@@ -7,7 +7,7 @@ import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcarasQuery }>, rep: FastifyReply) {
-  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query
+  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder, startDate, endDate } = req.query
   const query: Record<string, unknown> = {}
 
   if (search?.trim()) {
@@ -17,6 +17,19 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
 
   if (category) {
     query.category = category
+  }
+
+  const dateQuery: { $gte?: Date; $lte?: Date } = {}
+  if (startDate) {
+    dateQuery.$gte = new Date(startDate)
+  }
+
+  if (endDate) {
+    dateQuery.$lte = new Date(endDate)
+  }
+
+  if (Object.keys(dateQuery).length > 0) {
+    query.articleDate = dateQuery
   }
 
   const skip = (page - 1) * pageSize
