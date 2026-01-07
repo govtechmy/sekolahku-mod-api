@@ -28,7 +28,7 @@ const SiaranSchema = new Schema<Siaran>(
     articleDate: { type: Date, required: true },
     attachments: { type: [SiaranAttachmentSchema], default: [] },
     content: { type: SiaranContentSchema, required: true },
-    category: { type: String, required: true },
+    category: { type: Schema.Types.ObjectId, required: true },
   },
   {
     timestamps: true,

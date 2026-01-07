@@ -8,14 +8,20 @@ export const getAcaraByIdParamsSchema = z.object({
 export type GetAcaraByIdParams = z.infer<typeof getAcaraByIdParamsSchema>
 
 // Schema for listing acaras with optional filters
-export const listAcarasQuerySchema = z.object({
-  search: z.string().optional(), // Search in title field
-  category: z.string().optional(),
-  page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(12),
-  sortBy: z.enum(['articleDate', 'createdAt', 'updatedAt', 'title']).default('articleDate'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-})
+export const listAcarasQuerySchema = z
+  .object({
+    search: z.string().optional(), // Search in title field
+    category: z.string().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().positive().max(100).default(12),
+    sortBy: z.enum(['articleDate', 'createdAt', 'updatedAt', 'title']).default('articleDate'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
+  })
+  .refine(({ startDate, endDate }) => !startDate || !endDate || endDate >= startDate, {
+    message: 'endDate must be >= startDate',
+  })
 
 export type ListAcarasQuery = z.infer<typeof listAcarasQuerySchema>
 

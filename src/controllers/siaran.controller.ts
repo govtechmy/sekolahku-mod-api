@@ -2,12 +2,14 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
+import { CategoryService } from 'src/services/category.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
-  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query
+  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder, startDate, endDate } = req.query
+  const categorySvc = new CategoryService()
   const query: Record<string, unknown> = {}
 
   // Search in title field only
@@ -17,7 +19,21 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   }
 
   if (category) {
-    query.category = category
+    const categoryIds = await categorySvc.searchCategory(category)
+    if (categoryIds.length > 0) query.category = { $in: categoryIds.map(cat => cat._id) }
+  }
+
+  const dateQuery: { $gte?: Date; $lte?: Date } = {}
+  if (startDate) {
+    dateQuery.$gte = new Date(startDate)
+  }
+
+  if (endDate) {
+    dateQuery.$lte = new Date(endDate)
+  }
+
+  if (Object.keys(dateQuery).length > 0) {
+    query.articleDate = dateQuery
   }
 
   const skip = (page - 1) * pageSize
@@ -29,8 +45,22 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
 
   const total = await SiaranModel.countDocuments(query)
   const imageSvc = new ImageService()
+
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
   const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+
+  const categoryIds = siaranList.map(siaran => siaran.category.toString()).filter(cat => cat) as string[]
+  if (categoryIds.length > 0) {
+    const categoryList = await categorySvc.listCategory(categoryIds)
+    const categoryMap = new Map(categoryList.map(cat => [cat._id.toString(), cat]))
+
+    siaranList.forEach(siaran => {
+      if (siaran.category) {
+        const category = categoryMap.get(siaran.category.toString())
+        Object.assign(siaran, { categoryInfo: category })
+      }
+    })
+  }
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
@@ -82,7 +112,13 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   }
 
   const imageSvc = new ImageService()
+  const categorySvc = new CategoryService()
   const siaran = await SiaranModel.findById(id).lean()
+
+  if (!siaran) {
+    req.log.warn({ id }, 'siaran:get:not-found')
+    return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+  }
 
   if (siaran?.image) {
     const imageList = await imageSvc.listImages([siaran.image])
@@ -102,9 +138,11 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     })
   }
 
-  if (!siaran) {
-    req.log.warn({ id }, 'siaran:get:not-found')
-    return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+  if (siaran?.category) {
+    const categoryList = await categorySvc.listCategory([siaran.category.toString()])
+    if (categoryList.length > 0) {
+      Object.assign(siaran, { categoryInfo: categoryList[0] })
+    }
   }
 
   return rep.send(createSuccessResponse(siaran))

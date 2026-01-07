@@ -1,3 +1,5 @@
+import type { Types } from 'mongoose'
+
 import type { MARKER_GROUP, NEGERI, RESPONSE_STATUS, Role, SEKOLAH_STATUS } from './enum'
 
 export interface UserEntity {
@@ -295,7 +297,7 @@ export interface Siaran {
   /** Lexical editor rich text content */
   content: SiaranContent
   /** Reference to category document ID */
-  category: string
+  category: Types.ObjectId
   /** UTC timestamp when the document was created */
   createdAt: Date
   /** UTC timestamp when the document was last updated */
@@ -342,6 +344,7 @@ export interface SystemConfig {
 }
 
 export interface ArticleMedia {
+  _id: string
   alt: string
   filename: string
   mimeType: number
@@ -352,4 +355,14 @@ export interface ArticleMedia {
   focalY: number
   createdAt: Date
   updatedAt: Date
+}
+
+export interface Category {
+  _id: string
+  __v: number
+  name: string
+  value: string
+  createdAt: Date
+  updatedAt: Date
+  colors: string
 }
