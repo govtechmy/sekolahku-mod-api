@@ -9,14 +9,14 @@ const categoriesCache: CategoriesCache = {
   categories: [],
 }
 
-export async function getCachedArticleCategories(): Promise<Categories[]> {
+export async function getCachedCategories(): Promise<Categories[]> {
   if (categoriesCache.categories.length === 0) {
-    return await loadArticleCategoriesFromDB()
+    return await loadCategoriesFromDB()
   }
   return categoriesCache.categories
 }
 
-export async function loadArticleCategoriesFromDB(): Promise<Categories[]> {
+export async function loadCategoriesFromDB(): Promise<Categories[]> {
   const categories: Categories[] = await CategoriesModel.find().lean()
   categoriesCache.categories = categories
 

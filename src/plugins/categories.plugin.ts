@@ -1,6 +1,6 @@
 import type { Categories } from '@types'
 import type { FastifyInstance } from 'fastify'
-import { getCachedArticleCategories, loadArticleCategoriesFromDB } from 'src/services/categories-cache.svc'
+import { getCachedCategories, loadCategoriesFromDB } from 'src/services/categories-cache.svc'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -9,8 +9,8 @@ declare module 'fastify' {
 }
 
 export async function registerCategoriesPlugin(app: FastifyInstance): Promise<void> {
-  await loadArticleCategoriesFromDB()
-  const cache = await getCachedArticleCategories()
+  await loadCategoriesFromDB()
+  const cache = await getCachedCategories()
   app.decorate('categoriesCache', cache)
 
   app.log.info({ categoriesCacheCount: cache.length }, `categories cache loaded into memory (total=${cache.length})`)

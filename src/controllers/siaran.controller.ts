@@ -53,7 +53,7 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
       createdAt: siaran.createdAt,
       updatedAt: siaran.updatedAt,
       title: siaran.title,
-      image: siaran.image.toString(),
+      image: siaran.image?.toString(),
       readTime: siaran.readTime,
       articleDate: siaran.articleDate,
       content: siaran.content,
@@ -90,19 +90,6 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
 
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
   const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.image) || []).filter(img => img) as string[]
-
-  const categoryIds = siaranList.map(siaran => siaran.category?.toString()).filter(cat => cat) as string[]
-  if (categoryIds.length > 0) {
-    const categoryList = await categorySvc.listCategory(categoryIds)
-    const categoryMap = new Map(categoryList.map(cat => [cat._id.toString(), cat]))
-
-    siaranList.forEach(siaran => {
-      if (siaran.category) {
-        const category = categoryMap.get(siaran.category.toString())
-        Object.assign(siaran, { categoryInfo: category })
-      }
-    })
-  }
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
