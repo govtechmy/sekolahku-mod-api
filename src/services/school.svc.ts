@@ -12,11 +12,11 @@ export async function loadSchoolFilterCacheFromDB() {
   try {
     const { EntitiSekolahModel } = await import('../models/entiti-sekolah.model')
     const schoolTypes = await EntitiSekolahModel.distinct('data.infoSekolah.jenisLabel').lean()
-    schoolFilterCache.schoolTypes = schoolTypes.filter(Boolean).map(jenisLabel => ({ jenisLabel: jenisLabel as string }))
+    schoolFilterCache.schoolTypes = schoolTypes
+      .filter((jenisLabel): jenisLabel is string => typeof jenisLabel === 'string')
+      .map(jenisLabel => ({ jenisLabel }))
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error loading school filter cache from DB:', error)
-    throw error
+    throw new Error('Critical cache initialization failure while loading school filter cache from DB', { cause: error as Error })
   }
 }
 
