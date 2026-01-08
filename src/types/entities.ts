@@ -96,6 +96,11 @@ export interface EntitiSekolah {
   /** UTC timestamp when the document was created */
   createdAt: Date
 }
+
+export interface SchoolType {
+  jenisLabel: string
+}
+
 export interface AnalitikItem {
   /** Category or type */
   jenis: string
