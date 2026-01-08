@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { ArticleMediaModel } from 'src/models/article-media.model'
+import { CategoryModel } from 'src/models/category.model'
 import { SiaranModel } from 'src/models/siaran.model'
 
 import { getSiaranById, getSiaranList } from '../src/controllers/siaran.controller'
@@ -15,9 +17,20 @@ describe('siaran controller', () => {
       },
     }))
 
+    // Mock CategoryService
+    mock.module('../src/services/category.svc', () => ({
+      CategoryService: mock(() => ({
+        listCategory: mock(() => Promise.resolve([{ _id: 'mockId', name: 'news' }])),
+        searchCategory: mock(() => Promise.resolve([{ value: 'news' }])),
+      })),
+    }))
+
     SiaranModel.find = mockedModel.find
     SiaranModel.findById = mockedModel.findOne
     SiaranModel.countDocuments = mockedModel.countDocuments
+
+    CategoryModel.find = mockedModel.find
+    ArticleMediaModel.find = mockedModel.find
 
     // Reset mocks to default behavior
     mockQuery.lean = mock(() => Promise.resolve([]))

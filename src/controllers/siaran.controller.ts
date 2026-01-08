@@ -3,12 +3,14 @@ import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import type { SiaranListItem } from 'src/schemas/siaran/response.schema'
+import { CategoryService } from 'src/services/category.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
-  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder } = req.query as ListSiaransQuery
+  const { search, category, page = 1, pageSize = 12, sortBy, sortOrder, startDate, endDate } = req.query
+  const categorySvc = new CategoryService()
   const query: Record<string, unknown> = {}
   const cachedCategories = req.server.categoriesCache
   const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
@@ -20,7 +22,21 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   }
 
   if (category) {
-    query.category = category
+    const categoryIds = await categorySvc.searchCategory(category)
+    if (categoryIds.length > 0) query.category = { $in: categoryIds.map(cat => cat._id) }
+  }
+
+  const dateQuery: { $gte?: Date; $lte?: Date } = {}
+  if (startDate) {
+    dateQuery.$gte = new Date(startDate)
+  }
+
+  if (endDate) {
+    dateQuery.$lte = new Date(endDate)
+  }
+
+  if (Object.keys(dateQuery).length > 0) {
+    query.articleDate = dateQuery
   }
 
   const skip = (page - 1) * pageSize
@@ -71,8 +87,22 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
 
   const total = await SiaranModel.countDocuments(query)
   const imageSvc = new ImageService()
+
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
   const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+
+  const categoryIds = siaranList.map(siaran => siaran.category?.toString()).filter(cat => cat) as string[]
+  if (categoryIds.length > 0) {
+    const categoryList = await categorySvc.listCategory(categoryIds)
+    const categoryMap = new Map(categoryList.map(cat => [cat._id.toString(), cat]))
+
+    siaranList.forEach(siaran => {
+      if (siaran.category) {
+        const category = categoryMap.get(siaran.category.toString())
+        Object.assign(siaran, { categoryInfo: category })
+      }
+    })
+  }
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
