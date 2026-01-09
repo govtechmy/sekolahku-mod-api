@@ -3,14 +3,12 @@ import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import type { ArticleCategory, SiaranListItem } from 'src/schemas/siaran/response.schema'
-import { CategoryService } from 'src/services/category.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
   const { search, category, page = 1, pageSize = 12, sortBy, sortOrder, startDate, endDate } = req.query
-  const categorySvc = new CategoryService()
   const query: Record<string, unknown> = {}
   const cachedCategories = req.server.categoriesCache
   const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
@@ -21,9 +19,11 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     query.title = { $regex: escapedSearch, $options: 'i' }
   }
 
-  if (category) {
-    const categoryIds = await categorySvc.searchCategory(category)
-    if (categoryIds.length > 0) query.category = { $in: categoryIds.map(cat => cat._id) }
+  if (category && category.length > 3) {
+    const matchedCategories = cachedCategories.filter(cat => cat.value && cat.value.toLowerCase().includes(category.toLowerCase()))
+    if (matchedCategories.length > 0) {
+      query.category = { $in: matchedCategories.map(cat => cat._id) }
+    }
   }
 
   const dateQuery: { $gte?: Date; $lte?: Date } = {}
