@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 @url = http://localhost:3000
 # @url = https://sekolahku-api.govtechmy.xyz
-=======
-# @url = https://sekolahku-api.govtechmy.xyz
-@url = http://localhost:3000
->>>>>>> c48db98 (unmerged from latest, fixed categories schema, rename function)
 
 GET {{url}}/siaran?category=berita&startDate=2025-12-01&endDate=2025-12-02
 Content-Type: application/json

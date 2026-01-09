@@ -2,12 +2,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
-<<<<<<< HEAD
-import type { SiaranListItem } from 'src/schemas/siaran/response.schema'
-import { CategoryService } from 'src/services/category.svc'
-=======
 import type { ArticleCategory, SiaranListItem } from 'src/schemas/siaran/response.schema'
->>>>>>> c48db98 (unmerged from latest, fixed categories schema, rename function)
+import { CategoryService } from 'src/services/category.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -197,8 +193,6 @@ export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply
 
     categories.push(item)
   })
-
-  console.log('Cached Categories:', cachedCategories)
 
   return rep.send(createSuccessResponse(categories))
 }
