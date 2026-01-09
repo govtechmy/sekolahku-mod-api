@@ -1,10 +1,10 @@
-import type { Categories } from '@types'
+import type { CategoriesDocument } from '@types'
 import type { FastifyInstance } from 'fastify'
 import { getArticleCachedCategories, loadArticleCategoriesFromDB } from 'src/services/categories-cache.svc'
 
 declare module 'fastify' {
   interface FastifyInstance {
-    categoriesCache: Categories[]
+    categoriesCache: CategoriesDocument[]
   }
 }
 

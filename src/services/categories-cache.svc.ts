@@ -1,23 +1,23 @@
-import type { Categories } from '@types'
+import type { CategoriesDocument } from '@types'
 import { CategoriesModel } from 'src/models/categories.model'
 
 type CategoriesCache = {
-  categories: Categories[]
+  categories: CategoriesDocument[]
 }
 
 const categoriesCache: CategoriesCache = {
   categories: [],
 }
 
-export async function getArticleCachedCategories(): Promise<Categories[]> {
+export async function getArticleCachedCategories(): Promise<CategoriesDocument[]> {
   if (categoriesCache.categories.length === 0) {
     return await loadArticleCategoriesFromDB()
   }
   return categoriesCache.categories
 }
 
-export async function loadArticleCategoriesFromDB(): Promise<Categories[]> {
-  const categories: Categories[] = await CategoriesModel.find().lean()
+export async function loadArticleCategoriesFromDB(): Promise<CategoriesDocument[]> {
+  const categories = (await CategoriesModel.find().lean()) as CategoriesDocument[]
   categoriesCache.categories = categories
 
   return categories

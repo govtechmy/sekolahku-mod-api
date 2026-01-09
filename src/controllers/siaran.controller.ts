@@ -218,7 +218,7 @@ export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply
 
   cachedCategories.forEach(cat => {
     const item = {
-      _id: cat._id?.toString(),
+      _id: cat._id.toString(),
       name: cat.name,
       value: cat.value,
       colors: cat.colors,

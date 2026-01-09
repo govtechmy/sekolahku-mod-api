@@ -3,13 +3,12 @@ import { z } from 'zod'
 import { baseListResponseSchema, baseResponseSchema } from '../base'
 
 export const CategorySchema = z.object({
-  _id: z.string().optional(),
-  name: z.string().optional(),
-  value: z.string().optional(),
-  colors: z.string().optional(),
-  createdAt: z.union([z.string(), z.date()]).optional(),
-  updatedAt: z.union([z.string(), z.date()]).optional(),
-  __v: z.number().optional(),
+  _id: z.string(),
+  name: z.string(),
+  value: z.string(),
+  colors: z.string(),
+  createdAt: z.union([z.string(), z.date()]),
+  updatedAt: z.union([z.string(), z.date()]),
 })
 
 export const ArticleCategoriesResponseSchema = baseResponseSchema.extend({

@@ -1,5 +1,4 @@
 export * from './acara'
-export * from './categories'
 export * from './revalidate'
 export * from './schools'
 export * from './shared'
