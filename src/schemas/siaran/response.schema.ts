@@ -73,5 +73,5 @@ export const SiaranListResponseSchema = baseResponseSchema.extend({
 export const SiaranByIdResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
-  data: z.any(),
+  data: SiaranListItemSchema,
 })

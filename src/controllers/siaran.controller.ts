@@ -140,7 +140,6 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     return rep.code(400).send(createErrorResponse('Invalid Siaran ID format', 'ERR_400', 400))
   }
 
-  const imageSvc = new ImageService()
   const siaran = await SiaranModel.findById(id).lean()
 
   if (!siaran) {
@@ -148,33 +147,69 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
   }
 
-  if (siaran?.image) {
-    const imageList = await imageSvc.listImages([siaran.image])
-    Object.assign(siaran, { imageHero: imageList[0] })
+  const imageSvc = new ImageService()
+  const cachedCategories = req.server.categoriesCache
+  const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
+
+  const item: SiaranListItem = {
+    _id: siaran._id.toString(),
+    createdAt: siaran.createdAt,
+    updatedAt: siaran.updatedAt,
+    title: siaran.title,
+    image: siaran.image?.toString(),
+    readTime: siaran.readTime,
+    articleDate: siaran.articleDate,
+    content: siaran.content,
+    category: siaran.category.toString(),
+    __v: siaran.__v,
   }
 
-  if (siaran?.attachments && siaran?.attachments?.length > 0) {
-    const attachmentIds = siaran.attachments.map(att => att.image).filter(img => img) as string[]
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
-    const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
-
-    siaran.attachments.forEach(att => {
-      if (att.image) {
-        const attImage = attachmentImageMap.get(att.image.toString())
-        Object.assign(att, { ...attImage })
-      }
-    })
+  if (siaran.attachments && siaran.attachments.length > 0) {
+    item.attachments = siaran.attachments.map(att => ({
+      ...att,
+      image: att.image?.toString(),
+    }))
   }
 
-  if (siaran.category) {
-    const cachedCategories = req.server.categoriesCache
-    const categoryDetails = cachedCategories.find(cat => cat._id?.toString() === siaran.category.toString())
+  if (item.category) {
+    const categoryDetails = categoryMap.get(item.category)
     if (categoryDetails) {
-      Object.assign(siaran, { categoryDetails })
+      item.categoryDetails = {
+        _id: categoryDetails._id.toString(),
+        name: categoryDetails.name,
+        value: categoryDetails.value,
+        colors: categoryDetails.colors,
+        createdAt: categoryDetails.createdAt,
+        updatedAt: categoryDetails.updatedAt,
+      }
     }
   }
 
-  return rep.send(createSuccessResponse(siaran))
+  if (siaran.image) {
+    const imageList = await imageSvc.listImages([siaran.image.toString()])
+    if (imageList.length > 0) {
+      Object.assign(item, { imageHero: imageList[0] })
+    }
+  }
+
+  if (item.attachments && item.attachments.length > 0) {
+    const attachmentIds = item.attachments.map(att => att.image).filter(img => img) as string[]
+    if (attachmentIds.length > 0) {
+      const attachmentImages = await imageSvc.listImages(attachmentIds)
+      const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
+
+      item.attachments.forEach(att => {
+        if (att.image) {
+          const attImage = attachmentImageMap.get(att.image.toString())
+          if (attImage) {
+            Object.assign(att, { ...attImage })
+          }
+        }
+      })
+    }
+  }
+
+  return rep.send(createSuccessResponse(item))
 }
 
 export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply) {
@@ -184,9 +219,9 @@ export async function getSiaranCategories(req: FastifyRequest, rep: FastifyReply
   cachedCategories.forEach(cat => {
     const item = {
       _id: cat._id?.toString(),
-      name: cat.name?.toString(),
-      value: cat.value?.toString(),
-      colors: cat.colors?.toString(),
+      name: cat.name,
+      value: cat.value,
+      colors: cat.colors,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
     } as ArticleCategory
