@@ -71,7 +71,7 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     if (item.category) {
       const categoryDetails = categoryMap.get(item.category)
       if (categoryDetails) {
-        item.categoryDetails = {
+        item.categoryInfo = {
           _id: categoryDetails._id.toString(),
           name: categoryDetails.name,
           value: categoryDetails.value,
@@ -174,7 +174,7 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   if (item.category) {
     const categoryDetails = categoryMap.get(item.category)
     if (categoryDetails) {
-      item.categoryDetails = {
+      item.categoryInfo = {
         _id: categoryDetails._id.toString(),
         name: categoryDetails.name,
         value: categoryDetails.value,

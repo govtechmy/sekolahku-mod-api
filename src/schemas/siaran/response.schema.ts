@@ -56,7 +56,7 @@ export const SiaranListItemSchema = z.object({
   __v: z.number().optional(),
 
   imageHero: z.unknown().optional(),
-  categoryDetails: z.unknown().optional(),
+  categoryInfo: z.unknown().optional(),
 })
 
 export type SiaranListItem = z.infer<typeof SiaranListItemSchema>
