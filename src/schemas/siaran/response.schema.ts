@@ -2,9 +2,21 @@ import { z } from 'zod'
 
 import { baseListResponseSchema, baseResponseSchema } from '../base'
 
-export const SiaranCategoriesResponseSchema = baseResponseSchema.extend({
-  data: z.array(z.string()),
+export const CategorySchema = z.object({
+  _id: z.string().optional(),
+  name: z.string().optional(),
+  value: z.string().optional(),
+  colors: z.string().optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
+  updatedAt: z.union([z.string(), z.date()]).optional(),
+  __v: z.number().optional(),
 })
+
+export const ArticleCategoriesResponseSchema = baseResponseSchema.extend({
+  data: z.array(CategorySchema),
+})
+
+export type ArticleCategory = z.infer<typeof CategorySchema>
 
 export const SiaranListItemSchema = z.object({
   _id: z.string(),
