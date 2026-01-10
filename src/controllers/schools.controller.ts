@@ -117,8 +117,9 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
 export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyReply) {
   try {
-    //to get school-type from schools.data.infoSekolah.jenisLabel
-    const schoolTypes = await EntitiSekolahModel.distinct('data.infoSekolah.jenisLabel').lean()
+    // Get school types from cache instead of querying the database
+    const cache = req.server.schoolFilterCache
+    const schoolTypes = cache.schoolTypes.map(st => st.jenisLabel)
     return reply.send(createSuccessResponse(schoolTypes))
   } catch (error) {
     req.log.error({ err: error }, 'schools:get-school-types:error')
