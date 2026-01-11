@@ -396,47 +396,53 @@ describe('schools controller', () => {
 
   describe('getFilterSchoolType', () => {
     test('should return list of school types', async () => {
-      const mockSchoolTypes = ['Sekolah Rendah', 'Sekolah Menengah', 'Sekolah Jenis Kebangsaan (Cina)', 'Sekolah Jenis Kebangsaan (Tamil)']
-      const mockDistinct = {
-        lean: mock(() => Promise.resolve(mockSchoolTypes)),
-      }
-      EntitiSekolahModel.distinct = mock(() => mockDistinct) as unknown as typeof EntitiSekolahModel.distinct
+      const mockSchoolTypes = [
+        { jenisLabel: 'Sekolah Rendah' },
+        { jenisLabel: 'Sekolah Menengah' },
+        { jenisLabel: 'Sekolah Jenis Kebangsaan (Cina)' },
+        { jenisLabel: 'Sekolah Jenis Kebangsaan (Tamil)' },
+      ]
 
       const mockReply = {
         send: mock(() => ({})),
+        code: mock(() => mockReply),
       } as unknown as FastifyReply
 
       const mockReq = {
         log: { error: mock(() => ({})) },
+        server: {
+          schoolFilterCache: {
+            schoolTypes: mockSchoolTypes,
+          },
+        },
       } as unknown as FastifyRequest
 
       await getFilterSchoolType(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.distinct).toHaveBeenCalledWith('data.infoSekolah.jenisLabel')
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: mockSchoolTypes,
+        data: ['Sekolah Rendah', 'Sekolah Menengah', 'Sekolah Jenis Kebangsaan (Cina)', 'Sekolah Jenis Kebangsaan (Tamil)'],
       })
     })
 
     test('should return empty array if no school types found', async () => {
-      const mockDistinct = {
-        lean: mock(() => Promise.resolve([])),
-      }
-      EntitiSekolahModel.distinct = mock(() => mockDistinct) as unknown as typeof EntitiSekolahModel.distinct
-
       const mockReply = {
         send: mock(() => ({})),
+        code: mock(() => mockReply),
       } as unknown as FastifyReply
 
       const mockReq = {
         log: { error: mock(() => ({})) },
+        server: {
+          schoolFilterCache: {
+            schoolTypes: [],
+          },
+        },
       } as unknown as FastifyRequest
 
       await getFilterSchoolType(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.distinct).toHaveBeenCalledWith('data.infoSekolah.jenisLabel')
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
