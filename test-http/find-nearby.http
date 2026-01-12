@@ -21,7 +21,7 @@ GET {{url}}/schools/find-nearby?latitude=2.9542&longitude=101.7001&radiusInMeter
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET {{url}}/schools/find-nearby?latitude=4.1374&longitude=101.3375&radiusInMeter=19057.703084117366&zoom=13&name=sekolah
+GET {{url}}/schools/find-nearby?latitude=3.634&longitude=102.0451&radiusInMeter=305307.97561216046&zoom=9
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 

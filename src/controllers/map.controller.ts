@@ -87,17 +87,10 @@ async function groupByWestEastMalaysia(params: {
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   latitude: number
   longitude: number
-  effectiveRadius: number
   name?: string
   centroidCache: CentroidCache
 }) {
-  const query = {
-    'data.infoLokasi.location': {
-      $geoWithin: {
-        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
-      },
-    },
-  }
+  const query = {}
 
   if (params.name) {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
@@ -152,27 +145,21 @@ async function groupByNegeri(params: {
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   latitude: number
   longitude: number
-  effectiveRadius: number
   name?: string
   centroidCache: CentroidCache
 }) {
-  const query = {
-    'data.infoLokasi.location': {
-      $geoWithin: {
-        $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
-      },
-    },
-  }
+  const query = {}
 
   if (params.name) {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
   }
 
-  const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
+  const finalQuery = [
     { $match: query },
     { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
     { $sort: { _id: 1 as const } },
-  ])
+  ]
+  const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>(finalQuery)
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
   const markerGroups = negeriKeys.map(negeriKey => {
     const centroid = params.centroidCache.negeri[negeriKey]
@@ -260,12 +247,6 @@ async function searchByName(params: {
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   centroidCache: CentroidCache
 }) {
-  // const query = {
-  //   namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' },
-  // }
-  // const foundSchools = await EntitiSekolahModel.find(query).lean<EntitiSekolah[]>()
-  // const schoolsWithinRadius = returnWithinRadius(foundSchools, params.longitude, params.latitude, params.effectiveRadius)
-
   const query = {
     'data.infoLokasi.location': {
       $geoWithin: {
@@ -279,10 +260,6 @@ async function searchByName(params: {
   }
 
   const foundSchools = await EntitiSekolahModel.aggregate<EntitiSekolah>([{ $match: query }, { $sort: { _id: 1 as const } }])
-
-  // if (!Array.isArray(schoolsWithinRadius) || schoolsWithinRadius.length === 0) {
-  //   return null
-  // }
 
   if (params.grouping === MARKER_GROUP.INDIVIDUAL) {
     const markerGroups = foundSchools.map(school => {
@@ -312,7 +289,6 @@ async function searchByName(params: {
       viewInfoLokasi: params.viewInfoLokasi,
       latitude: params.latitude,
       longitude: params.longitude,
-      effectiveRadius: params.effectiveRadius,
       name: params.name,
       centroidCache: params.centroidCache,
     })
@@ -351,7 +327,6 @@ async function searchByName(params: {
         viewInfoLokasi: params.viewInfoLokasi,
         latitude: params.latitude,
         longitude: params.longitude,
-        effectiveRadius: params.effectiveRadius,
         name: params.name,
         centroidCache: params.centroidCache,
       })
@@ -460,7 +435,6 @@ async function searchByRadius(params: {
       viewInfoLokasi: params.viewInfoLokasi,
       latitude: params.latitude,
       longitude: params.longitude,
-      effectiveRadius: params.effectiveRadius,
       centroidCache: params.centroidCache,
     })
     return response
@@ -471,7 +445,6 @@ async function searchByRadius(params: {
       viewInfoLokasi: params.viewInfoLokasi,
       latitude: params.latitude,
       longitude: params.longitude,
-      effectiveRadius: params.effectiveRadius,
       centroidCache: params.centroidCache,
     })
     return response
