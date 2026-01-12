@@ -90,7 +90,7 @@ async function groupByWestEastMalaysia(params: {
   name?: string
   centroidCache: CentroidCache
 }) {
-  const query = {}
+  const query = { 'data.infoLokasi.location': { $exists: true } }
 
   if (params.name) {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
@@ -148,7 +148,7 @@ async function groupByNegeri(params: {
   name?: string
   centroidCache: CentroidCache
 }) {
-  const query = {}
+  const query = { 'data.infoLokasi.location': { $exists: true } }
 
   if (params.name) {
     Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
