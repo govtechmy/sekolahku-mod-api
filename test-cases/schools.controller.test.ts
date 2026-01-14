@@ -307,10 +307,12 @@ describe('schools controller', () => {
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith({
+      const query = {
+        'data.infoLokasi.location': { $exists: true },
         namaSekolah: { $regex: 'Test', $options: 'i' },
-      })
-      expect(EntitiSekolahModel.find).toHaveBeenCalledWith({ namaSekolah: { $regex: 'Test', $options: 'i' } })
+      }
+      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith(query)
+      expect(EntitiSekolahModel.find).toHaveBeenCalledWith(query)
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,

@@ -53,13 +53,9 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
   try {
     if (latitude && longitude) {
-      // Fetch radius from SystemConfig if radiusInMeter is not provided from frontend
       const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
       const radius = Number(radiusConfig?.value ?? 100000)
-
-      // Use frontend value if provided, otherwise use config value
       const effectiveRadius = radiusInMeter ?? radius
-
       const locationQuery = {
         ...query,
         'data.infoLokasi.location': {
@@ -83,9 +79,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       }
 
       const total = await EntitiSekolahModel.countDocuments(countQuery)
-
       const schools = await EntitiSekolahModel.find(locationQuery).skip(skip).limit(numericLimit).lean()
-
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
@@ -95,10 +89,10 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
       return reply.send(response)
     } else {
+      Object.assign(query, { 'data.infoLokasi.location': { $exists: true } })
+
       const total = await EntitiSekolahModel.countDocuments(query)
-
       const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
-
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
