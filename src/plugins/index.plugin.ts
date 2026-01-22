@@ -2,6 +2,7 @@ import compress from '@fastify/compress'
 // import etag from '@fastify/etag'
 import type { FastifyInstance } from 'fastify'
 
+import { registerArticleCategoriesPlugin } from './categories.plugin'
 import { registerCentroidPlugin } from './centroid.plugin'
 import { registerEnvPlugin } from './env.plugin'
 import { registerRequestLogging } from './request-logging.plugin'
@@ -13,6 +14,7 @@ export async function registerAllPlugins(app: FastifyInstance, isProduction: boo
   await registerEnvPlugin(app)
   await registerCentroidPlugin(app)
   await registerSchoolFilterPlugin(app)
+  await registerArticleCategoriesPlugin(app)
   await registerSecurityPlugins(app, isProduction)
   await registerSwaggerPlugins(app)
   await app.register(compress, { global: true })

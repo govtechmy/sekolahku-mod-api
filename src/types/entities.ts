@@ -341,6 +341,24 @@ export interface Acara {
   updatedAt: Date
 }
 
+export interface Categories {
+  _id: Types.ObjectId | string
+  name: string
+  value: string
+  colors: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CategoriesDocument {
+  _id: Types.ObjectId
+  name: string
+  value: string
+  colors: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface SystemConfig {
   key: string
   value: unknown
@@ -360,14 +378,4 @@ export interface ArticleMedia {
   focalY: number
   createdAt: Date
   updatedAt: Date
-}
-
-export interface Category {
-  _id: string
-  __v: number
-  name: string
-  value: string
-  createdAt: Date
-  updatedAt: Date
-  colors: string
 }

@@ -5,7 +5,17 @@ GET {{url}}/siaran?category=berita&startDate=2025-12-01&endDate=2025-12-02
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
+### Search siaran
+GET {{url}}/siaran?search=Penangguhan
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
 ### Get Siaran By ID
-GET {{url}}/siaran/695b4efb849ebb4271555e4f
+GET {{url}}/siaran/692ea68ea210bbae85e0634b
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get Siaran Categories
+GET {{url}}/siaran/categories
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
