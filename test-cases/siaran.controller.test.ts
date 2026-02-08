@@ -108,7 +108,7 @@ describe('siaran controller', () => {
       const mockReq = {
         query: { category: 'news', page: 1, pageSize: 10 },
         server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
-      } as FastifyRequest<{ Querystring: ListSiaransQuery }>
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
 
