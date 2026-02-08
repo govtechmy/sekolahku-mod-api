@@ -309,7 +309,13 @@ describe('schools controller', () => {
 
       const query = {
         'data.infoLokasi.location': { $exists: true },
-        namaSekolah: { $regex: 'Test', $options: 'i' },
+        $or: [
+          { namaSekolah: { $regex: 'Test', $options: 'i' } },
+          { 'data.infoKomunikasi.alamatSurat': { $regex: 'Test', $options: 'i' } },
+          { 'data.infoKomunikasi.bandarSurat': { $regex: 'Test', $options: 'i' } },
+          { 'data.infoPentadbiran.parlimen': { $regex: 'Test', $options: 'i' } },
+          { 'data.infoPentadbiran.negeri': { $regex: 'Test', $options: 'i' } },
+        ],
       }
       expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith(query)
       expect(EntitiSekolahModel.find).toHaveBeenCalledWith(query)

@@ -7,10 +7,8 @@ import { createErrorResponse, createSuccessResponse } from 'src/utils/response.u
 
 import type { CreateSchoolBody } from '@/schemas'
 
-const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
-
 export async function listSchools(req: FastifyRequest, reply: FastifyReply) {
-  const schools = await EntitiSekolahModel.find().lean()
+  const schools = await EntitiSekolahModel.find().sort({ namaSekolah: 1 }).lean()
   return reply.send(createSuccessResponse(schools))
 }
 
@@ -40,7 +38,16 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   const query = {}
 
   if (namaSekolah) {
-    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(namaSekolah), $options: 'i' } })
+    const regexObj = { $regex: escapeStringRegex(namaSekolah), $options: 'i' }
+    Object.assign(query, {
+      $or: [
+        { namaSekolah: regexObj },
+        { 'data.infoKomunikasi.alamatSurat': regexObj },
+        { 'data.infoKomunikasi.bandarSurat': regexObj },
+        { 'data.infoPentadbiran.parlimen': regexObj },
+        { 'data.infoPentadbiran.negeri': regexObj },
+      ],
+    })
   }
 
   if (negeri && negeri !== 'ALL') {
@@ -69,17 +76,10 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         },
       }
 
-      const countQuery = {
-        ...query,
-        'data.infoLokasi.location': {
-          $geoWithin: {
-            $centerSphere: [[longitude, latitude], effectiveRadius / EARTH_RADIUS_IN_METERS],
-          },
-        },
-      }
+      const countQuery = { ...query }
 
       const total = await EntitiSekolahModel.countDocuments(countQuery)
-      const schools = await EntitiSekolahModel.find(locationQuery).skip(skip).limit(numericLimit).lean()
+      const schools = await EntitiSekolahModel.find(locationQuery).sort({ namaSekolah: 1 }).skip(skip).limit(numericLimit).lean()
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,
@@ -92,7 +92,7 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       Object.assign(query, { 'data.infoLokasi.location': { $exists: true } })
 
       const total = await EntitiSekolahModel.countDocuments(query)
-      const schools = await EntitiSekolahModel.find(query).skip(skip).limit(numericLimit).lean()
+      const schools = await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(numericLimit).lean()
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,

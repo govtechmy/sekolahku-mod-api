@@ -30,8 +30,14 @@ Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 
 ### 
-GET {{url}}/schools/find-nearby?name=la%20salle
+GET {{url}}/schools/find-nearby?latitude=2.8834&longitude=112.074&radiusInMeter=596.408277997992&zoom=18&name=sarawak
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
+### 
+GET {{url}}/schools/search?namaSekolah=sarawak&negeri=ALL&jenis=ALL
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+###
 Response: 200 OK
 
 {
