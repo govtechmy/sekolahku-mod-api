@@ -93,7 +93,16 @@ async function groupByWestEastMalaysia(params: {
   const query = { 'data.infoLokasi.location': { $exists: true } }
 
   if (params.name) {
-    Object.assign(query, { namaSekolah: { $regex: escapeStringRegex(params.name), $options: 'i' } })
+    const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
+    Object.assign(query, {
+      $or: [
+        { namaSekolah: regexObj },
+        { 'data.infoKomunikasi.alamatSurat': regexObj },
+        { 'data.infoKomunikasi.bandarSurat': regexObj },
+        { 'data.infoPentadbiran.parlimen': regexObj },
+        { 'data.infoPentadbiran.negeri': regexObj },
+      ],
+    })
   }
 
   const westEastTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
