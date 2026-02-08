@@ -39,7 +39,7 @@ describe('siaran controller', () => {
 
   describe('getSiaranList', () => {
     test('should return list of siarans', async () => {
-      const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
+      const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
       mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
@@ -49,7 +49,8 @@ describe('siaran controller', () => {
 
       const mockReq = {
         query: { page: 1, pageSize: 10 },
-      } as FastifyRequest<{ Querystring: ListSiaransQuery }>
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
 
@@ -67,7 +68,7 @@ describe('siaran controller', () => {
     })
 
     test('should filter by search', async () => {
-      const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
+      const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
       mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
@@ -77,7 +78,8 @@ describe('siaran controller', () => {
 
       const mockReq = {
         query: { search: 'Test', page: 1, pageSize: 10 },
-      } as FastifyRequest<{ Querystring: ListSiaransQuery }>
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
 
@@ -95,7 +97,7 @@ describe('siaran controller', () => {
     })
 
     test('should filter by category', async () => {
-      const mockSiarans = [{ title: 'Test Siaran', category: 'news' }]
+      const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
       mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
@@ -105,11 +107,12 @@ describe('siaran controller', () => {
 
       const mockReq = {
         query: { category: 'news', page: 1, pageSize: 10 },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
       } as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
 
-      expect(SiaranModel.find).toHaveBeenCalledWith({ category: 'news' })
+      expect(SiaranModel.find).toHaveBeenCalledWith({ category: { $in: ['mockId'] } })
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
@@ -125,7 +128,7 @@ describe('siaran controller', () => {
 
   describe('getSiaranById', () => {
     test('should return siaran if found', async () => {
-      const mockSiaran = { title: 'Test Siaran', category: 'news' }
+      const mockSiaran = { _id: '507f1f77bcf86cd799439011', title: 'Test Siaran', category: 'news' }
       const mockReply = {
         send: mock(() => ({})),
         code: mock(() => ({
@@ -135,6 +138,7 @@ describe('siaran controller', () => {
       const mockReq = {
         params: { id: '507f1f77bcf86cd799439011' },
         log: { warn: mock(() => ({})) },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
       } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
 
       mockQueryOne.lean.mockResolvedValue(mockSiaran)
@@ -157,6 +161,7 @@ describe('siaran controller', () => {
 
       const mockReq = {
         params: {},
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
       } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
 
       await getSiaranById(mockReq, mockReply)
@@ -182,6 +187,7 @@ describe('siaran controller', () => {
 
       const mockReq = {
         params: { id: 'invalid' },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
       } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
 
       await getSiaranById(mockReq, mockReply)
@@ -208,6 +214,7 @@ describe('siaran controller', () => {
       const mockReq = {
         params: { id: '507f1f77bcf86cd799439011' },
         log: { warn: mock(() => ({})) },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
       } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
 
       await getSiaranById(mockReq, mockReply)
