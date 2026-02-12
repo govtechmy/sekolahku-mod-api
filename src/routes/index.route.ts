@@ -7,6 +7,7 @@ import { registerMapRoutes } from './map.route'
 import { registerRevalidateRoute } from './revalidate.route'
 import { registerSchoolRoutes } from './schools.routes'
 import { registerSiaranRoutes } from './siaran.route'
+import { registerTakwimRoutes } from './takwim.route'
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   app.get('/health', { schema: { tags: ['System'], summary: 'Healthcheck' } }, async (_, reply) => {
@@ -31,4 +32,5 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await registerSiaranRoutes(app)
   await registerAcaraRoutes(app)
   await registerAnalitikRoutes(app)
+  await registerTakwimRoutes(app)
 }
