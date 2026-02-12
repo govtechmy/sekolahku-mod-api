@@ -341,6 +341,38 @@ export interface Acara {
   updatedAt: Date
 }
 
+// Acara types (same structure as Siaran)
+export interface TakwimContent {
+  root: LexicalRootNode
+}
+
+export interface TakwimAttachment {
+  /** Reference to articles-media document ID */
+  image?: string | null
+  id?: string
+}
+
+export interface Takwim {
+  /** Event title */
+  title: string
+  /** Reference to articles-media document ID */
+  image: string
+  /** Estimated read time in minutes */
+  readTime: number
+  /** Event date */
+  articleDate: Date
+  /** Array of attachment objects with image references */
+  attachments?: AcaraAttachment[]
+  /** Lexical editor rich text content */
+  content: AcaraContent
+  /** Reference to category document ID */
+  category: string
+  /** UTC timestamp when the document was created */
+  createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt: Date
+}
+
 export interface Categories {
   _id: Types.ObjectId | string
   name: string
