@@ -86,7 +86,6 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         pageNumber: page,
         pageSize: pageSize,
       })
-      console.log("THIS IS THE RESPONSE====================================================================",response)
 
       return reply.send(response)
     } else {
