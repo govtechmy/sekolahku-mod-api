@@ -76,6 +76,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     data: { type: EntitiSekolahDataSchema, required: true },
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },
     createdAt: { type: Date, default: Date.now },
+    isSekolahAngkatMADANI : {type : Boolean, default:null}
   },
   { timestamps: false, versionKey: false },
 )

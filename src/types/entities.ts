@@ -95,6 +95,8 @@ export interface EntitiSekolah {
   status?: SEKOLAH_STATUS | null
   /** UTC timestamp when the document was created */
   createdAt: Date
+  /** Check either is sekolah Angkat MADANI or not */
+  isSekolahAngkatMADANI? : boolean
 }
 
 export interface SchoolType {
