@@ -99,7 +99,6 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
         pageNumber: page,
         pageSize: pageSize,
       })
-
       return reply.send(response)
     }
   } catch (error) {
