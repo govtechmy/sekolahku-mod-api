@@ -29,7 +29,6 @@ export type ListAcarasQuery = z.infer<typeof listAcarasQuerySchema>
 export const createAcaraBodySchema = z.object({
   title: z.string().optional(),
   image: z.string().optional(),
-  readTime: z.number().int().positive().optional(),
   articleDate: z.coerce.date().optional(),
   attachments: z
     .array(
