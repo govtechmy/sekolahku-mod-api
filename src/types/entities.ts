@@ -96,7 +96,7 @@ export interface EntitiSekolah {
   /** UTC timestamp when the document was created */
   createdAt: Date
   /** Check either is sekolah Angkat MADANI or not */
-  isSekolahAngkatMADANI? : boolean
+  isSekolahAngkatMADANI?: boolean
 }
 
 export interface SchoolType {
@@ -295,8 +295,6 @@ export interface Siaran {
   title: string
   /** Reference to articles-media document ID */
   image: string
-  /** Estimated read time in minutes */
-  readTime: number
   /** Publication date of the article */
   articleDate: Date
   /** Array of attachment objects with image references */
@@ -327,8 +325,6 @@ export interface Acara {
   title: string
   /** Reference to articles-media document ID */
   image: string
-  /** Estimated read time in minutes */
-  readTime: number
   /** Event date */
   articleDate: Date
   /** Array of attachment objects with image references */
@@ -359,8 +355,6 @@ export interface Takwim {
   title: string
   /** Reference to articles-media document ID */
   image: string
-  /** Estimated read time in minutes */
-  readTime: number
   /** Event date */
   articleDate: Date
   /** Array of attachment objects with image references */
