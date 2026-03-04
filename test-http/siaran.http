@@ -11,7 +11,7 @@ Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### Get Siaran By ID
-GET {{url}}/siaran/692ea68ea210bbae85e0634b
+GET {{url}}/siaran/698d61d0525429262c5d6312
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 

@@ -3,6 +3,7 @@ import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
 import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import type { ArticleCategory, SiaranListItem } from 'src/schemas/siaran/response.schema'
+import { AttachmentService } from 'src/services/attachment.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -65,6 +66,7 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
       item.attachments = siaran.attachments.map(att => ({
         ...att,
         image: att.image?.toString(),
+        file: att.file?.toString(),
       }))
     }
 
@@ -85,11 +87,12 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     siaranList.push(item)
   })
 
-  const total = await SiaranModel.countDocuments(query)
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
 
+  const total = await SiaranModel.countDocuments(query)
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
-  const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+  const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.file) || []).filter(img => img) as string[]
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
@@ -104,15 +107,16 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   }
 
   if (attachmentIds.length > 0) {
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
     const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
     siaranList.forEach(siaran => {
       if (siaran.attachments && siaran.attachments.length > 0) {
         siaran.attachments.forEach(att => {
-          if (att.image) {
-            const attImage = attachmentImageMap.get(att.image.toString())
+          if (att.file) {
+            const attImage = attachmentImageMap.get(att.file.toString())
             Object.assign(att, { ...attImage })
+            att.file = att.file.toString()
           }
         })
       }
@@ -148,6 +152,8 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   }
 
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
+
   const cachedCategories = req.server.categoriesCache
   const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
 
@@ -168,6 +174,7 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
     item.attachments = siaran.attachments.map(att => ({
       ...att,
       image: att.image?.toString(),
+      file: att.file?.toString(),
     }))
   }
 
@@ -193,16 +200,17 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   }
 
   if (item.attachments && item.attachments.length > 0) {
-    const attachmentIds = item.attachments.map(att => att.image).filter(img => img) as string[]
+    const attachmentIds = item.attachments.map(att => att.file).filter(img => img) as string[]
     if (attachmentIds.length > 0) {
-      const attachmentImages = await imageSvc.listImages(attachmentIds)
+      const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
       const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
       item.attachments.forEach(att => {
-        if (att.image) {
-          const attImage = attachmentImageMap.get(att.image.toString())
+        if (att.file) {
+          const attImage = attachmentImageMap.get(att.file.toString())
           if (attImage) {
             Object.assign(att, { ...attImage })
+            att.file = att.file.toString()
           }
         }
       })

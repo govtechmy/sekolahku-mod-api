@@ -32,6 +32,7 @@ export const SiaranListItemSchema = z.object({
     .array(
       z.object({
         image: z.string().optional(),
+        file: z.string().optional(),
         id: z.string().optional(),
         _id: z.string().optional(),
         createdAt: z.union([z.string(), z.date()]).optional(),

@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { AcaraModel } from 'src/models'
 import type { GetAcaraByIdParams, ListAcarasQuery } from 'src/schemas/acara'
+import { AttachmentService } from 'src/services/attachment.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -39,10 +40,12 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
     .limit(pageSize)
     .lean()
 
-  const total = await AcaraModel.countDocuments(query)
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
+
+  const total = await AcaraModel.countDocuments(query)
   const imageIds = acaraList.map(acara => acara.image).filter(img => img) as string[]
-  const attachmentIds = acaraList.flatMap(acr => acr.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+  const attachmentIds = acaraList.flatMap(acr => acr.attachments?.map(att => att.file) || []).filter(img => img) as string[]
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
@@ -57,15 +60,16 @@ export async function getAcaraList(req: FastifyRequest<{ Querystring: ListAcaras
   }
 
   if (attachmentIds.length > 0) {
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
     const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
     acaraList.forEach(acr => {
       if (acr.attachments && acr.attachments.length > 0) {
         acr.attachments.forEach(att => {
-          if (att.image) {
-            const attImage = attachmentImageMap.get(att.image.toString())
+          if (att.file) {
+            const attImage = attachmentImageMap.get(att.file.toString())
             Object.assign(att, { ...attImage })
+            att.file = att.file.toString()
           }
         })
       }
@@ -94,6 +98,7 @@ export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdPar
   }
 
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
   const acara = await AcaraModel.findById(id).lean()
 
   if (acara?.image) {
@@ -102,14 +107,15 @@ export async function getAcaraById(req: FastifyRequest<{ Params: GetAcaraByIdPar
   }
 
   if (acara?.attachments && acara?.attachments?.length > 0) {
-    const attachmentIds = acara.attachments.map(att => att.image).filter(img => img) as string[]
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentIds = acara.attachments.map(att => att.file).filter(img => img) as string[]
+    const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
     const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
     acara.attachments.forEach(att => {
-      if (att.image) {
-        const attImage = attachmentImageMap.get(att.image.toString())
+      if (att.file) {
+        const attImage = attachmentImageMap.get(att.file.toString())
         Object.assign(att, { ...attImage })
+        att.file = att.file.toString()
       }
     })
   }

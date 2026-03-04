@@ -96,7 +96,7 @@ export interface EntitiSekolah {
   /** UTC timestamp when the document was created */
   createdAt: Date
   /** Check either is sekolah Angkat MADANI or not */
-  isSekolahAngkatMADANI? : boolean
+  isSekolahAngkatMADANI?: boolean
 }
 
 export interface SchoolType {
@@ -287,6 +287,7 @@ export interface SiaranContent {
 export interface SiaranAttachment {
   /** Reference to articles-media document ID */
   image?: string | null
+  file?: string | null
   id?: string
 }
 
@@ -319,6 +320,7 @@ export interface AcaraContent {
 export interface AcaraAttachment {
   /** Reference to articles-media document ID */
   image?: string | null
+  file?: string | null
   id?: string
 }
 
@@ -401,6 +403,20 @@ export interface SystemConfig {
 }
 
 export interface ArticleMedia {
+  _id: string
+  alt: string
+  filename: string
+  mimeType: number
+  filesize: Date
+  width: number
+  height: number
+  focalX: number
+  focalY: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Media {
   _id: string
   alt: string
   filename: string

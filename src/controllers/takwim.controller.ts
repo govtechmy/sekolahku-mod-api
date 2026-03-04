@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { TakwimModel } from 'src/models'
 import type { GetTakwimByIdParams, ListTakwimsQuery } from 'src/schemas/takwim'
+import { AttachmentService } from 'src/services/attachment.svc'
 import { ImageService } from 'src/services/image.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -39,10 +40,12 @@ export async function getTakwimList(req: FastifyRequest<{ Querystring: ListTakwi
     .limit(pageSize)
     .lean()
 
-  const total = await TakwimModel.countDocuments(query)
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
+
+  const total = await TakwimModel.countDocuments(query)
   const imageIds = takwimList.map(takwim => takwim.image).filter(img => img) as string[]
-  const attachmentIds = takwimList.flatMap(tkwm => tkwm.attachments?.map(att => att.image) || []).filter(img => img) as string[]
+  const attachmentIds = takwimList.flatMap(tkwm => tkwm.attachments?.map(att => att.file) || []).filter(img => img) as string[]
 
   if (imageIds.length > 0) {
     const imageList = await imageSvc.listImages(imageIds)
@@ -57,15 +60,16 @@ export async function getTakwimList(req: FastifyRequest<{ Querystring: ListTakwi
   }
 
   if (attachmentIds.length > 0) {
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
     const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
     takwimList.forEach(takwim => {
       if (takwim.attachments && takwim.attachments.length > 0) {
         takwim.attachments.forEach(att => {
-          if (att.image) {
-            const attImage = attachmentImageMap.get(att.image.toString())
+          if (att.file) {
+            const attImage = attachmentImageMap.get(att.file.toString())
             Object.assign(att, { ...attImage })
+            att.file = att.file.toString()
           }
         })
       }
@@ -94,6 +98,7 @@ export async function getTakwimById(req: FastifyRequest<{ Params: GetTakwimByIdP
   }
 
   const imageSvc = new ImageService()
+  const attachmentSvc = new AttachmentService()
   const takwim = await TakwimModel.findById(id).lean()
 
   if (takwim?.image) {
@@ -102,14 +107,15 @@ export async function getTakwimById(req: FastifyRequest<{ Params: GetTakwimByIdP
   }
 
   if (takwim?.attachments && takwim?.attachments?.length > 0) {
-    const attachmentIds = takwim.attachments.map(att => att.image).filter(img => img) as string[]
-    const attachmentImages = await imageSvc.listImages(attachmentIds)
+    const attachmentIds = takwim.attachments.map(att => att.file).filter(img => img) as string[]
+    const attachmentImages = await attachmentSvc.listFiles(attachmentIds)
     const attachmentImageMap = new Map(attachmentImages.map(img => [img._id.toString(), img]))
 
     takwim.attachments.forEach(att => {
-      if (att.image) {
-        const attImage = attachmentImageMap.get(att.image.toString())
+      if (att.file) {
+        const attImage = attachmentImageMap.get(att.file.toString())
         Object.assign(att, { ...attImage })
+        att.file = att.file.toString()
       }
     })
   }
