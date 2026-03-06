@@ -24,7 +24,6 @@ const TakwimSchema = new Schema<Takwim>(
   {
     title: { type: String, required: true },
     image: { type: String, required: true },
-    readTime: { type: Number, required: true },
     articleDate: { type: Date, required: true },
     attachments: { type: [TakwimAttachmentSchema], default: [] },
     content: { type: TakwimContentSchema, required: true },

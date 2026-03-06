@@ -24,7 +24,6 @@ const AcaraSchema = new Schema<Acara>(
   {
     title: { type: String, required: true },
     image: { type: String, required: true },
-    readTime: { type: Number, required: true },
     articleDate: { type: Date, required: true },
     attachments: { type: [AcaraAttachmentSchema], default: [] },
     content: { type: AcaraContentSchema, required: true },

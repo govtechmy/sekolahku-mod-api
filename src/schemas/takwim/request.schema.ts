@@ -28,7 +28,6 @@ export type ListTakwimsQuery = z.infer<typeof listTakwimsQuerySchema>
 export const createTakwimBodySchema = z.object({
   title: z.string().optional(),
   image: z.string().optional(),
-  readTime: z.number().int().positive().optional(),
   articleDate: z.coerce.date().optional(),
   attachments: z
     .array(

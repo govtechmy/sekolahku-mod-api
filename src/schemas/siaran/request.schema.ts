@@ -29,7 +29,6 @@ export type ListSiaransQuery = z.infer<typeof listSiaransQuerySchema>
 export const createSiaranBodySchema = z.object({
   title: z.string().optional(),
   image: z.string().optional(),
-  readTime: z.number().int().positive().optional(),
   articleDate: z.coerce.date().optional(),
   attachments: z
     .array(

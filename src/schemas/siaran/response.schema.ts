@@ -25,7 +25,6 @@ export const SiaranListItemSchema = z.object({
 
   title: z.string().optional(),
   image: z.string().optional(),
-  readTime: z.number().optional(),
   articleDate: z.union([z.string(), z.date()]).optional(),
 
   attachments: z
