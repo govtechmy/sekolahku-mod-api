@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
-import { SystemConfigModel } from 'src/models/system-config.model'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
+import type { EntitiSekolah } from 'src/types/entities'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -31,7 +31,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // the function is to list all schools within the radius
 
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude, radiusInMeter } = req.query
+  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude } = req.query
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -60,26 +60,43 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
   try {
     if (latitude && longitude) {
-      const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
-      const radius = Number(radiusConfig?.value ?? 100000)
-      const effectiveRadius = radiusInMeter ?? radius
-      const locationQuery = {
-        ...query,
-        'data.infoLokasi.location': {
-          $nearSphere: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [longitude, latitude],
-            },
-            $maxDistance: effectiveRadius,
+      const effectiveRadius = 5_000_000
+      const lat = Number(latitude)
+      const lng = Number(longitude)
+
+      const countPipeline = [
+        {
+          $geoNear: {
+            near: { type: 'Point' as const, coordinates: [lng, lat] as [number, number] },
+            distanceField: 'distance',
+            maxDistance: effectiveRadius,
+            spherical: true,
+            key: 'data.infoLokasi.location',
+            query: query,
           },
         },
-      }
+        { $count: 'total' },
+      ]
 
-      const countQuery = { ...query }
+      const countResult = await EntitiSekolahModel.aggregate(countPipeline)
+      const total = countResult[0]?.total || 0
 
-      const total = await EntitiSekolahModel.countDocuments(countQuery)
-      const schools = await EntitiSekolahModel.find(locationQuery).sort({ namaSekolah: 1 }).skip(skip).limit(numericLimit).lean()
+      const schools = await EntitiSekolahModel.aggregate<EntitiSekolah>([
+        {
+          $geoNear: {
+            near: { type: 'Point' as const, coordinates: [lng, lat] as [number, number] },
+            distanceField: 'distance',
+            maxDistance: effectiveRadius,
+            spherical: true,
+            key: 'data.infoLokasi.location',
+            query: query,
+          },
+        },
+        { $sort: { distance: 1, namaSekolah: 1 } },
+        { $skip: skip },
+        { $limit: numericLimit },
+      ])
+
       const response = createSuccessResponse({
         items: schools,
         totalRecords: total,

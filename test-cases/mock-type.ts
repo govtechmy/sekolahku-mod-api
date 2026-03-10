@@ -17,6 +17,7 @@ export type MockedModelType = {
   create: ReturnType<typeof mock>
   countDocuments: ReturnType<typeof mock>
   distinct: ReturnType<typeof mock>
+  aggregate: ReturnType<typeof mock>
 }
 
 export const mockQuery: MockQueryType = {
@@ -38,6 +39,7 @@ export const mockedModel: MockedModelType = {
   distinct: mock(() => ({
     lean: mock(() => Promise.resolve([])),
   })),
+  aggregate: mock(() => Promise.resolve([])),
 }
 
 export const mockedDataProcSvc = {
