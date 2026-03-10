@@ -48,15 +48,18 @@ describe('schools controller', () => {
       groupByParlimen: mock(() => Promise.resolve({})),
     }))
 
-    EntitiSekolahModel.find = mockedModel.find
-    EntitiSekolahModel.findOne = mockedModel.findOne
-    EntitiSekolahModel.create = mockedModel.create
-    EntitiSekolahModel.countDocuments = mockedModel.countDocuments
-    EntitiSekolahModel.distinct = mockedModel.distinct
-
-    MalaysiaPolygonModel.find = mock(() => Promise.resolve({})) as unknown as typeof MalaysiaPolygonModel.findOne
-    SystemConfigModel.findOne = mock(() => Promise.resolve({ value: '10000' })) as unknown as typeof SystemConfigModel.findOne
+    mock.clearAllMocks()
   })
+
+  EntitiSekolahModel.find = mockedModel.find
+  EntitiSekolahModel.findOne = mockedModel.findOne
+  EntitiSekolahModel.create = mockedModel.create
+  EntitiSekolahModel.countDocuments = mockedModel.countDocuments
+  EntitiSekolahModel.distinct = mockedModel.distinct
+  EntitiSekolahModel.aggregate = mockedModel.aggregate
+
+  MalaysiaPolygonModel.find = mock(() => Promise.resolve({})) as unknown as typeof MalaysiaPolygonModel.findOne
+  SystemConfigModel.findOne = mock(() => Promise.resolve({ value: '10000' })) as unknown as typeof SystemConfigModel.findOne
 
   describe('listSchools', () => {
     test('should return list of schools', async () => {
@@ -291,7 +294,6 @@ describe('schools controller', () => {
   describe('getSchoolsSearchSuggestion', () => {
     test('should return search results without location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockQuery.lean.mockResolvedValue(1)
       mockQuery.lean.mockResolvedValue(mockSchools)
       mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
@@ -333,8 +335,7 @@ describe('schools controller', () => {
 
     test('should return search results with location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockQuery.lean.mockResolvedValue(1)
-      mockQuery.lean.mockResolvedValue(mockSchools)
+      mockedModel.aggregate.mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce(mockSchools)
 
       const mockReply = {
         send: mock(() => ({})),
@@ -347,15 +348,13 @@ describe('schools controller', () => {
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalled()
-      expect(EntitiSekolahModel.find).toHaveBeenCalled()
+      expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
       expect(mockReply.send).toHaveBeenCalled()
     })
 
-    test('should return search results with location', async () => {
+    test('should return search results with location and negeri', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockQuery.lean.mockResolvedValue(1)
-      mockQuery.lean.mockResolvedValue(mockSchools)
+      mockedModel.aggregate.mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce(mockSchools)
 
       const mockReply = {
         send: mock(() => ({})),
@@ -368,8 +367,7 @@ describe('schools controller', () => {
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalled()
-      expect(EntitiSekolahModel.find).toHaveBeenCalled()
+      expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
       expect(mockReply.send).toHaveBeenCalled()
     })
 
