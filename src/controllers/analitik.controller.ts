@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { AnalitikSekolahModel } from 'src/models'
-import { DatasetStatusModel } from 'src/models/dataset-status.model'
+import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {

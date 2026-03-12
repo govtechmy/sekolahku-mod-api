@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { getAnalitikData } from 'src/controllers/analitik.controller'
-import { AnalitikSekolahModel } from 'src/models'
-import { DatasetStatusModel } from 'src/models/dataset-status.model'
+import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
 
 import { mockedModel, mockQueryOne } from './mock-type'
 
