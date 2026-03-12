@@ -423,3 +423,7 @@ export interface Media {
   createdAt: Date
   updatedAt: Date
 }
+
+export interface DatasetStatus {
+  lastUpdatedAt: Date
+}

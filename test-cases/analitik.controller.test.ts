@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { getAnalitikData } from 'src/controllers/analitik.controller'
-import { AnalitikSekolahModel } from 'src/models'
+import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
 
 import { mockedModel, mockQueryOne } from './mock-type'
 
@@ -15,11 +15,12 @@ describe('analitik controller', () => {
     }))
 
     AnalitikSekolahModel.findOne = mockedModel.findOne
+    DatasetStatusModel.findOne = mockedModel.findOne
   })
 
   describe('getAnalitikData', () => {
     test('should return analitik data', async () => {
-      const mockAnalitikData = { jumlahSekolah: 100, jumlahGuru: 500, jumlahPelajar: 2000 }
+      const mockAnalitikData = { jumlahSekolah: 100, jumlahGuru: 500, jumlahPelajar: 2000, lastUpdatedAt: new Date() }
       mockQueryOne.lean.mockResolvedValue(mockAnalitikData)
 
       const mockReply = {
@@ -32,6 +33,7 @@ describe('analitik controller', () => {
       await getAnalitikData(mockReq, mockReply)
 
       expect(AnalitikSekolahModel.findOne).toHaveBeenCalled()
+      expect(DatasetStatusModel.findOne).toHaveBeenCalled()
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
@@ -52,6 +54,7 @@ describe('analitik controller', () => {
       await getAnalitikData(mockReq, mockReply)
 
       expect(AnalitikSekolahModel.findOne).toHaveBeenCalled()
+      expect(DatasetStatusModel.findOne).toHaveBeenCalled()
       expect(mockReply.status).toHaveBeenCalledWith(404)
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'ERROR',

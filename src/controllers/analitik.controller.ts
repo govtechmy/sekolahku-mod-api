@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { AnalitikSekolahModel } from 'src/models'
+import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
@@ -9,6 +9,12 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
     return res.status(404).send(errResponse)
   }
 
-  const response = createSuccessResponse(result)
+  const dataset = await DatasetStatusModel.findOne().lean()
+  const data = {
+    ...result,
+    lastUpdatedAt: dataset?.lastUpdatedAt ?? new Date(),
+  }
+
+  const response = createSuccessResponse(data)
   return res.send(response)
 }

@@ -22,6 +22,7 @@ export const AnalitikResponseSchema = z.object({
       }),
     ),
   }),
+  lastUpdatedAt: z.union([z.string(), z.date()]),
 })
 
 export const getAnalitikResponseSchema = baseResponseSchema.extend({
