@@ -35,11 +35,12 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
-  const query = {}
+  const conditions: Record<string, unknown>[] = []
 
+  // Build search conditions for namaSekolah (searches across multiple fields)
   if (namaSekolah) {
     const regexObj = { $regex: escapeStringRegex(namaSekolah), $options: 'i' }
-    Object.assign(query, {
+    conditions.push({
       $or: [
         { namaSekolah: regexObj },
         { 'data.infoKomunikasi.alamatSurat': regexObj },
@@ -50,13 +51,19 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     })
   }
 
+  // Filter by state/negeri
   if (negeri && negeri !== 'ALL') {
-    Object.assign(query, { 'data.infoPentadbiran.negeri': negeri })
+    conditions.push({ 'data.infoPentadbiran.negeri': negeri })
   }
 
-  if (jenis && jenis !== 'ALL') {
-    Object.assign(query, { 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(jenis), $options: 'i' } })
+  // Filter by school type(s) - supports multiple types
+  if (jenis && Array.isArray(jenis) && jenis.length > 0 && !jenis.includes('ALL')) {
+    const jenisRegexArray = jenis.map(j => ({ 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(j), $options: 'i' } }))
+    conditions.push({ $or: jenisRegexArray })
   }
+
+  // Combine all conditions with $and
+  const query = conditions.length > 0 ? { $and: conditions } : {}
 
   try {
     if (latitude && longitude) {
