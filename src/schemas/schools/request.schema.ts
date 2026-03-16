@@ -61,7 +61,7 @@ export const listSchoolsSearchQuerySchema = z.object({
   sort: z.union([z.string(), z.array(z.string())]).optional(),
   namaSekolah: z.string().optional(),
   negeri: z.enum([...Object.values(NEGERI), 'ALL']).optional(),
-  jenis: z.string().optional(),
+  jenis: z.union([z.string(), z.array(z.string())]).optional(),
   latitude: z.coerce
     .number()
     .refine(v => v >= -90 && v <= 90)

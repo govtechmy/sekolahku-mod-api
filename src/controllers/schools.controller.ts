@@ -29,9 +29,18 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 }
 
 // the function is to list all schools within the radius
-
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude } = req.query
+  const { page = 1, pageSize = 25, namaSekolah, negeri, latitude, longitude } = req.query
+
+  let jenis = [] as string[]
+  if (req.query.jenis) {
+    if (Array.isArray(req.query.jenis)) {
+      jenis = req.query.jenis
+    } else {
+      jenis = [req.query.jenis]
+    }
+  }
+
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -54,8 +63,14 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     Object.assign(query, { 'data.infoPentadbiran.negeri': negeri })
   }
 
-  if (jenis && jenis !== 'ALL') {
-    Object.assign(query, { 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(jenis), $options: 'i' } })
+  if (jenis.length > 0 && !jenis.includes('ALL')) {
+    const jenisRegex = jenis.map(j => escapeStringRegex(j)).join('|')
+    Object.assign(query, {
+      'data.infoSekolah.jenisLabel': {
+        $regex: jenisRegex,
+        $options: 'i',
+      },
+    })
   }
 
   try {
