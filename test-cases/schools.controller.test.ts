@@ -310,14 +310,18 @@ describe('schools controller', () => {
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
       const query = {
-        'data.infoLokasi.location': { $exists: true },
-        $or: [
-          { namaSekolah: { $regex: 'Test', $options: 'i' } },
-          { 'data.infoKomunikasi.alamatSurat': { $regex: 'Test', $options: 'i' } },
-          { 'data.infoKomunikasi.bandarSurat': { $regex: 'Test', $options: 'i' } },
-          { 'data.infoPentadbiran.parlimen': { $regex: 'Test', $options: 'i' } },
-          { 'data.infoPentadbiran.negeri': { $regex: 'Test', $options: 'i' } },
+        $and: [
+          {
+            $or: [
+              { namaSekolah: { $regex: 'Test', $options: 'i' } },
+              { 'data.infoKomunikasi.alamatSurat': { $regex: 'Test', $options: 'i' } },
+              { 'data.infoKomunikasi.bandarSurat': { $regex: 'Test', $options: 'i' } },
+              { 'data.infoPentadbiran.parlimen': { $regex: 'Test', $options: 'i' } },
+              { 'data.infoPentadbiran.negeri': { $regex: 'Test', $options: 'i' } },
+            ],
+          },
         ],
+        'data.infoLokasi.location': { $exists: true },
       }
       expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith(query)
       expect(EntitiSekolahModel.find).toHaveBeenCalledWith(query)
