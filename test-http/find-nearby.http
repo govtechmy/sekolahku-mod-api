@@ -34,7 +34,7 @@ GET {{url}}/schools/find-nearby?latitude=2.8834&longitude=112.074&radiusInMeter=
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET {{url}}/schools/search?namaSekolah=sarawak&negeri=ALL&jenis=SK&jenis=SMK
+GET {{url}}/schools/search?namaSekolah=sarawak&negeri=ALL&jenis=SJK,SMK
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ###

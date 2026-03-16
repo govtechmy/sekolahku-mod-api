@@ -30,17 +30,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 
 // the function is to list all schools within the radius
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, latitude, longitude } = req.query
-
-  let jenis = [] as string[]
-  if (req.query.jenis) {
-    if (Array.isArray(req.query.jenis)) {
-      jenis = req.query.jenis
-    } else {
-      jenis = [req.query.jenis]
-    }
-  }
-
+  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude } = req.query
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -65,14 +55,10 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     conditions.push({ 'data.infoPentadbiran.negeri': negeri })
   }
 
-  if (jenis.length > 0 && !jenis.includes('ALL')) {
-    const jenisRegex = jenis.map(j => escapeStringRegex(j)).join('|')
-    Object.assign(conditions, {
-      'data.infoSekolah.jenisLabel': {
-        $regex: jenisRegex,
-        $options: 'i',
-      },
-    })
+  // Filter by school type(s) - supports multiple types
+  if (jenis && Array.isArray(jenis) && jenis.length > 0 && !jenis.includes('ALL')) {
+    const jenisRegexArray = jenis.map(j => ({ 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(j), $options: 'i' } }))
+    conditions.push({ $or: jenisRegexArray })
   }
 
   // Combine all conditions with $and
