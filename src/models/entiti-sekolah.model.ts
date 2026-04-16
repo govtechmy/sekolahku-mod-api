@@ -8,6 +8,8 @@ const InfoSekolahSchema = new Schema<InfoSekolah>(
     jenisLabel: { type: String, default: null },
     jumlahPelajar: { type: Number, default: 0 },
     jumlahGuru: { type: Number, default: 0 },
+    jumlahPelajarEnrolmenKhas: { type: Number, default: null },
+    jumlahPelajarTanpaEnrolmenKhas: { type: Number, default: null },
   },
   { _id: false },
 )
@@ -34,6 +36,7 @@ const InfoPentadbiranSchema = new Schema<InfoPentadbiran>(
     sesi: { type: String, default: null },
     prasekolah: { type: Boolean, default: null },
     integrasi: { type: Boolean, default: null },
+    peringkat: { type: String, default: null },
   },
   { _id: false },
 )
@@ -75,10 +78,9 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },
-    createdAt: { type: Date, default: Date.now },
     isSekolahAngkatMADANI: { type: Boolean, default: null },
   },
-  { timestamps: false, versionKey: false },
+  { timestamps: true, versionKey: false },
 )
 
 // Correct geospatial index

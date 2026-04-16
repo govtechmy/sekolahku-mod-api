@@ -32,6 +32,10 @@ export interface InfoSekolah {
   jumlahPelajar?: number
   /** Total number of teachers */
   jumlahGuru?: number
+  /** Total students including special needs enrolment */
+  jumlahPelajarEnrolmenKhas?: number | null
+  /** Total students excluding special needs enrolment */
+  jumlahPelajarTanpaEnrolmenKhas?: number | null
 }
 
 export interface InfoKomunikasi {
@@ -66,6 +70,8 @@ export interface InfoPentadbiran {
   prasekolah?: boolean | null
   /** Runs integration programme */
   integrasi?: boolean | null
+  /** Education level e.g. RENDAH, MENENGAH */
+  peringkat?: string | null
 }
 
 export interface InfoLokasi {
@@ -95,12 +101,21 @@ export interface EntitiSekolah {
   status?: SEKOLAH_STATUS | null
   /** UTC timestamp when the document was created */
   createdAt: Date
+  /** UTC timestamp when the document was last updated */
+  updatedAt?: Date
   /** Check either is sekolah Angkat MADANI or not */
   isSekolahAngkatMADANI?: boolean
 }
 
 export interface SchoolType {
   jenisLabel: string
+}
+
+export interface PeringkatBreakdown {
+  /** Education level e.g. RENDAH, MENENGAH */
+  peringkat: string
+  /** Total count for this level */
+  total: number
 }
 
 export interface AnalitikItem {
@@ -110,6 +125,8 @@ export interface AnalitikItem {
   peratus: number
   /** Total count for this category */
   total: number
+  /** Breakdown by education level */
+  peringkatBreakdown?: PeringkatBreakdown[]
 }
 
 export interface AnalitikSekolahData {
