@@ -80,7 +80,7 @@ const EntitiSekolahSchema = new Schema<EntitiSekolah>(
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },
     isSekolahAngkatMADANI: { type: Boolean, default: null },
   },
-  { timestamps: true, versionKey: false },
+  { timestamps: false, versionKey: false },
 )
 
 // Correct geospatial index
