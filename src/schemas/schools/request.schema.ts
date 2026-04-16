@@ -80,6 +80,7 @@ export const listSchoolsSearchQuerySchema = z.object({
     .refine(v => v >= -180 && v <= 180)
     .optional(),
   radiusInMeter: z.coerce.number().positive().optional(),
+  peringkat: z.string().optional(),
 })
 
 export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
