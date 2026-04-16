@@ -16,7 +16,7 @@ const AnalitikItemSchema = new Schema<AnalitikItem>(
     jenis: { type: String, required: true },
     peratus: { type: Number, required: true },
     total: { type: Number, required: true },
-    peringkatBreakdown: { type: [PeringkatBreakdownSchema], default: [] },
+    peringkatBreakdown: { type: [PeringkatBreakdownSchema] },
   },
   { _id: false },
 )
