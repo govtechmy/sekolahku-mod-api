@@ -100,7 +100,7 @@ export interface EntitiSekolah {
   /** School status */
   status?: SEKOLAH_STATUS | null
   /** UTC timestamp when the document was created */
-  createdAt: Date
+  createdAt?: Date
   /** UTC timestamp when the document was last updated */
   updatedAt?: Date
   /** Check either is sekolah Angkat MADANI or not */
