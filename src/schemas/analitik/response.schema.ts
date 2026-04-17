@@ -12,6 +12,14 @@ export const AnalitikResponseSchema = z.object({
         jenis: z.string(),
         peratus: z.number(),
         total: z.number(),
+        peringkatBreakdown: z
+          .array(
+            z.object({
+              peringkat: z.string(),
+              total: z.number(),
+            }),
+          )
+          .optional(),
       }),
     ),
     bantuan: z.array(
@@ -19,6 +27,14 @@ export const AnalitikResponseSchema = z.object({
         jenis: z.string(),
         peratus: z.number(),
         total: z.number(),
+        peringkatBreakdown: z
+          .array(
+            z.object({
+              peringkat: z.string(),
+              total: z.number(),
+            }),
+          )
+          .optional(),
       }),
     ),
   }),
