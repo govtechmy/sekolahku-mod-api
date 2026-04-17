@@ -442,5 +442,8 @@ export interface Media {
 }
 
 export interface DatasetStatus {
+  /** UTC timestamp when the dataset was last updated */
   lastUpdatedAt: Date
+  /** Version of the file associated with this dataset */
+  fileVersion: string
 }

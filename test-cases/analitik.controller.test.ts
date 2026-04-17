@@ -37,7 +37,11 @@ describe('analitik controller', () => {
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: mockAnalitikData,
+        data: {
+          ...mockAnalitikData,
+          lastUpdatedAt: expect.any(Date),
+          fileVersion: 'Undefined',
+        },
       })
     })
 
