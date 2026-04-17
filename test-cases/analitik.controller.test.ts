@@ -40,7 +40,39 @@ describe('analitik controller', () => {
         data: {
           ...mockAnalitikData,
           lastUpdatedAt: expect.any(Date),
-          fileVersion: 'Undefined',
+          fileVersion: null,
+        },
+      })
+    })
+
+    test('should return fileVersion from dataset when it exists', async () => {
+      const mockAnalitikData = { jumlahSekolah: 100, jumlahGuru: 500, jumlahPelajar: 2000 }
+      const mockDatasetData = { lastUpdatedAt: new Date('2026-01-01'), fileVersion: 'v2.5.0' }
+
+      let callCount = 0
+      mockQueryOne.lean.mockImplementation(() => {
+        callCount++
+        return Promise.resolve(callCount === 1 ? mockAnalitikData : mockDatasetData)
+      })
+
+      const mockReply = {
+        send: mock(() => ({})),
+        status: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {} as FastifyRequest
+
+      await getAnalitikData(mockReq, mockReply)
+
+      expect(AnalitikSekolahModel.findOne).toHaveBeenCalled()
+      expect(DatasetStatusModel.findOne).toHaveBeenCalled()
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          ...mockAnalitikData,
+          lastUpdatedAt: mockDatasetData.lastUpdatedAt,
+          fileVersion: 'v2.5.0',
         },
       })
     })
