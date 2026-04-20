@@ -13,6 +13,7 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
   const data = {
     ...result,
     lastUpdatedAt: dataset?.lastUpdatedAt ?? new Date(),
+    fileVersion: dataset?.fileVersion ?? null,
   }
 
   const response = createSuccessResponse(data)

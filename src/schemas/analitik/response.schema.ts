@@ -39,6 +39,7 @@ export const AnalitikResponseSchema = z.object({
     ),
   }),
   lastUpdatedAt: z.union([z.string(), z.date()]),
+  fileVersion: z.string().nullable(),
 })
 
 export const getAnalitikResponseSchema = baseResponseSchema.extend({

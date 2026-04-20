@@ -443,4 +443,5 @@ export interface Media {
 
 export interface DatasetStatus {
   lastUpdatedAt: Date
+  fileVersion: string | null
 }
