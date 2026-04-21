@@ -27,7 +27,8 @@ export async function registerAnalitikRoutes(app: FastifyInstance) {
     getAnalitikData,
   )
 
-  app.get<{ Querystring: FilterSchoolTypeWithPeringkatQuery }>('/analitik/filter/school', 
+  app.get<{ Querystring: FilterSchoolTypeWithPeringkatQuery }>(
+    '/analitik/filter/school',
     {
       preHandler: authMiddleware,
       schema: {

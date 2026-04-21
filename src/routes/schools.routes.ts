@@ -3,7 +3,13 @@ import type { FastifyInstance, onSendHookHandler } from 'fastify'
 import { authHeaderSchema, type ListSchoolsSearchQuery, peringkatResponseSchema, schoolTypesResponseSchema } from '@/schemas'
 import { listSchoolsSearchQuerySchema } from '@/schemas'
 
-import { getFilterSchoolType, getFilterPeringkat, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
+import {
+  getFilterPeringkat,
+  getFilterSchoolType,
+  getSchoolById,
+  getSchoolsSearchSuggestion,
+  listSchools,
+} from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 const setNoStoreCacheHeaders: onSendHookHandler = async (_, reply, payload) => {

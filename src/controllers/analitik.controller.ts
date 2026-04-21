@@ -21,7 +21,10 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
   return res.send(response)
 }
 
-export async function getFilterSchoolTypeWithPeringkat(req: FastifyRequest<{ Querystring: FilterSchoolTypeWithPeringkatQuery }>, res: FastifyReply) {
+export async function getFilterSchoolTypeWithPeringkat(
+  req: FastifyRequest<{ Querystring: FilterSchoolTypeWithPeringkatQuery }>,
+  res: FastifyReply,
+) {
   const { peringkat } = req.query
 
   const result = await AnalitikSekolahModel.findOne().lean()
@@ -33,7 +36,7 @@ export async function getFilterSchoolTypeWithPeringkat(req: FastifyRequest<{ Que
   const jenisLabel = result.data.jenisLabel
 
   if (!peringkat) {
-    const data = jenisLabel.map((item) => ({
+    const data = jenisLabel.map(item => ({
       jenis: item.jenis,
       peringkatBreakdown: item.peringkatBreakdown,
     }))
@@ -41,10 +44,10 @@ export async function getFilterSchoolTypeWithPeringkat(req: FastifyRequest<{ Que
   }
 
   const filtered = jenisLabel
-    .filter((item) => item.peringkatBreakdown?.some((pb) => pb.peringkat === peringkat))
-    .map((item) => ({
+    .filter(item => item.peringkatBreakdown?.some(pb => pb.peringkat === peringkat))
+    .map(item => ({
       jenis: item.jenis,
-      peringkatBreakdown: item.peringkatBreakdown?.filter((pb) => pb.peringkat === peringkat) ?? [],
+      peringkatBreakdown: item.peringkatBreakdown?.filter(pb => pb.peringkat === peringkat) ?? [],
     }))
 
   return res.send(createSuccessResponse(filtered))
