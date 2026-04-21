@@ -102,3 +102,9 @@ export const getNearbySchoolByLocationSchema = z.object({
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>
+
+export const getFilterSchoolTypeSchema = z.object({
+  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
+})
+
+export type GetFilterSchoolTypeQuery = z.infer<typeof getFilterSchoolTypeSchema>

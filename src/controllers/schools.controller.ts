@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
-import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
+import type { GetFilterSchoolTypeQuery, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
@@ -137,10 +137,18 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   }
 }
 
-export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyReply) {
+// export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
+export async function getFilterSchoolType(req: FastifyRequest<{ Querystring: GetFilterSchoolTypeQuery }>, reply: FastifyReply) {
   try {
     // Get school types from cache instead of querying the database
+    const { peringkat } = req.query
     const cache = req.server.schoolFilterCache
+
+    if (peringkat && peringkat !== 'ALL') {
+      const filteredTypes = cache.schoolTypes.filter(st => st.peringkats?.includes(peringkat)).map(st => st.jenisLabel)
+      return reply.send(createSuccessResponse(filteredTypes))
+    }
+
     const schoolTypes = cache.schoolTypes.map(st => st.jenisLabel)
     return reply.send(createSuccessResponse(schoolTypes))
   } catch (error) {

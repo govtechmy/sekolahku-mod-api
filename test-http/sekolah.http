@@ -16,7 +16,7 @@ Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ###
-GET  {{url}}/schools/filter/school-type
+GET  {{url}}/schools/filter/school-type?peringkat=ALL
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
