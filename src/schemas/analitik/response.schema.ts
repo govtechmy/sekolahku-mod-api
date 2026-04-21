@@ -1,6 +1,25 @@
 import { z } from 'zod'
-
+import { PERINGKAT } from '@types'
 import { baseResponseSchema } from '../base'
+
+const PeringkatBreakdownSchema = z.object({
+  peringkat: z.string(),
+})
+
+const SchoolTypeWithPeringkatSchema = z.object({
+  jenis: z.string(),
+  peringkatBreakdown: z.array(PeringkatBreakdownSchema).optional(),
+})
+
+export const filterSchoolTypeWithPeringkatQuerySchema = z.object({
+  peringkat: z.enum(PERINGKAT).optional(),
+})
+
+export type FilterSchoolTypeWithPeringkatQuery = z.infer<typeof filterSchoolTypeWithPeringkatQuerySchema>
+
+export const getFilterSchoolTypeWithPeringkatResponseSchema = baseResponseSchema.extend({
+  data: z.array(SchoolTypeWithPeringkatSchema),
+})
 
 export const AnalitikResponseSchema = z.object({
   jumlahSekolah: z.number(),
