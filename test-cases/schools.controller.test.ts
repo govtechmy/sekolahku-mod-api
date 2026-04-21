@@ -3,6 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { MalaysiaPolygonModel } from 'src/models'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
+import type { GetFilterSchoolTypeQuery } from 'src/schemas/schools/request.schema'
 
 import { getFindNearby } from '../src/controllers/map.controller'
 import {
@@ -407,10 +408,10 @@ describe('schools controller', () => {
   describe('getFilterSchoolType', () => {
     test('should return list of school types', async () => {
       const mockSchoolTypes = [
-        { jenisLabel: 'Sekolah Rendah' },
-        { jenisLabel: 'Sekolah Menengah' },
-        { jenisLabel: 'Sekolah Jenis Kebangsaan (Cina)' },
-        { jenisLabel: 'Sekolah Jenis Kebangsaan (Tamil)' },
+        { jenisLabel: 'Sekolah Rendah', peringkats: ['RENDAH'] },
+        { jenisLabel: 'Sekolah Menengah', peringkats: ['MENENGAH'] },
+        { jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Cina)', peringkats: ['RENDAH'] },
+        { jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Tamil)', peringkats: ['RENDAH'] },
       ]
 
       const mockReply = {
@@ -419,20 +420,21 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
+        query: { peringkat: 'ALL' },
         log: { error: mock(() => ({})) },
         server: {
           schoolFilterCache: {
             schoolTypes: mockSchoolTypes,
           },
         },
-      } as unknown as FastifyRequest
+      } as unknown as FastifyRequest<{ Querystring: GetFilterSchoolTypeQuery }>
 
       await getFilterSchoolType(mockReq, mockReply)
 
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: ['Sekolah Rendah', 'Sekolah Menengah', 'Sekolah Jenis Kebangsaan (Cina)', 'Sekolah Jenis Kebangsaan (Tamil)'],
+        data: ['Sekolah Rendah', 'Sekolah Menengah', 'Sekolah Rendah Jenis Kebangsaan (Cina)', 'Sekolah Rendah Jenis Kebangsaan (Tamil)'],
       })
     })
 
@@ -443,13 +445,14 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
+        query: {},
         log: { error: mock(() => ({})) },
         server: {
           schoolFilterCache: {
             schoolTypes: [],
           },
         },
-      } as unknown as FastifyRequest
+      } as unknown as FastifyRequest<{ Querystring: GetFilterSchoolTypeQuery }>
 
       await getFilterSchoolType(mockReq, mockReply)
 
@@ -472,8 +475,9 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
+        query: {},
         log: { error: mock(() => ({})) },
-      } as unknown as FastifyRequest
+      } as unknown as FastifyRequest<{ Querystring: GetFilterSchoolTypeQuery }>
 
       await getFilterSchoolType(mockReq, mockReply)
 
