@@ -4,6 +4,7 @@ import { baseResponseSchema } from '../base'
 
 const PeringkatBreakdownSchema = z.object({
   peringkat: z.string(),
+  total: z.number(),
 })
 
 const SchoolTypeWithPeringkatSchema = z.object({

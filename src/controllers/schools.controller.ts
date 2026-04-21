@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
-import { SekolahModel } from 'src/models'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
