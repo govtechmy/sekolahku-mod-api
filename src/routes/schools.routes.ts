@@ -1,9 +1,15 @@
 import type { FastifyInstance, onSendHookHandler } from 'fastify'
 
-import { authHeaderSchema, type ListSchoolsSearchQuery, schoolTypesResponseSchema } from '@/schemas'
+import { authHeaderSchema, type ListSchoolsSearchQuery, peringkatResponseSchema, schoolTypesResponseSchema } from '@/schemas'
 import { listSchoolsSearchQuerySchema } from '@/schemas'
 
-import { getFilterSchoolType, getSchoolById, getSchoolsSearchSuggestion, listSchools } from '../controllers/schools.controller'
+import {
+  getFilterPeringkat,
+  getFilterSchoolType,
+  getSchoolById,
+  getSchoolsSearchSuggestion,
+  listSchools,
+} from '../controllers/schools.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 const setNoStoreCacheHeaders: onSendHookHandler = async (_, reply, payload) => {
@@ -73,5 +79,23 @@ export async function registerSchoolRoutes(app: FastifyInstance): Promise<void> 
       },
     },
     getFilterSchoolType,
+  )
+
+  app.get(
+    '/schools/filter/peringkat',
+    {
+      preHandler: authMiddleware,
+      onSend: [setNoStoreCacheHeaders],
+      schema: {
+        headers: authHeaderSchema,
+        response: {
+          200: peringkatResponseSchema,
+        },
+        tags: ['Schools'],
+        summary: 'Peringkat filter',
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
+      },
+    },
+    getFilterPeringkat,
   )
 }

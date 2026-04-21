@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { EntitiSekolah } from 'src/types/entities'
+import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -147,4 +148,9 @@ export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyRep
     const errResponse = createErrorResponse('Failed to fetch school types. Please try again later.', 'ERR_500', 500)
     return reply.code(500).send(errResponse)
   }
+}
+
+export async function getFilterPeringkat(req: FastifyRequest, reply: FastifyReply) {
+  const peringkatValues = Object.values(PERINGKAT)
+  return reply.send(createSuccessResponse(peringkatValues))
 }

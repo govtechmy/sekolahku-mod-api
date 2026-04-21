@@ -2,3 +2,18 @@
 GET http://localhost:3000/analitik
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - all
+GET http://localhost:3000/analitik/filter/school
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - RENDAH
+GET http://localhost:3000/analitik/filter/school?peringkat=RENDAH
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - MENENGAH
+GET http://localhost:3000/analitik/filter/school?peringkat=MENENGAH
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

@@ -33,6 +33,12 @@ export const schoolTypesResponseSchema = z.object({
   data: z.array(z.string()),
 })
 
+export const peringkatResponseSchema = z.object({
+  status: z.literal(RESPONSE_STATUS.SUCCESS),
+  statusCode: z.number(),
+  data: z.array(z.string()),
+})
+
 export type FindNearbyResponse = z.infer<typeof FindNearbyResponseSchema>
 
 export type SchoolTypesResponse = z.infer<typeof schoolTypesResponseSchema>
