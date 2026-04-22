@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { NEGERI } from '../../types/enum'
+import { NEGERI, PERINGKAT } from '../../types/enum'
 
 const GeoJSONPointSchema = z.object({
   type: z.literal('Point'),
@@ -80,6 +80,7 @@ export const listSchoolsSearchQuerySchema = z.object({
     .refine(v => v >= -180 && v <= 180)
     .optional(),
   radiusInMeter: z.coerce.number().positive().optional(),
+  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
 })
 
 export type ListSchoolsSearchQuery = z.infer<typeof listSchoolsSearchQuerySchema>
@@ -101,3 +102,9 @@ export const getNearbySchoolByLocationSchema = z.object({
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>
+
+export const getFilterSchoolTypeSchema = z.object({
+  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
+})
+
+export type GetFilterSchoolTypeQuery = z.infer<typeof getFilterSchoolTypeSchema>

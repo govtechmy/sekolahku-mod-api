@@ -1,7 +1,8 @@
-import type { SchoolType } from '@types'
-
 export type SchoolFilterCached = {
-  schoolTypes: SchoolType[]
+  schoolTypes: {
+    jenisLabel: string
+    peringkats?: string[]
+  }[]
 }
 
 const schoolFilterCache: SchoolFilterCached = {
@@ -10,11 +11,14 @@ const schoolFilterCache: SchoolFilterCached = {
 
 export async function loadSchoolFilterCacheFromDB() {
   try {
-    const { EntitiSekolahModel } = await import('../models/entiti-sekolah.model')
-    const schoolTypes = await EntitiSekolahModel.distinct('data.infoSekolah.jenisLabel').lean()
-    schoolFilterCache.schoolTypes = schoolTypes
-      .filter((jenisLabel): jenisLabel is string => typeof jenisLabel === 'string')
-      .map(jenisLabel => ({ jenisLabel }))
+    const { AnalitikSekolahModel } = await import('../models/analitik-sekolah.model')
+    const schoolTypes = await AnalitikSekolahModel.find().lean()
+    const list = schoolTypes.flatMap(doc =>
+      doc.data.jenisLabel
+        .filter(jenis => typeof jenis.jenis === 'string' && jenis.jenis !== 'TIADA MAKLUMAT')
+        .map(jenis => ({ jenisLabel: jenis.jenis, peringkats: jenis.peringkatBreakdown?.map(x => x.peringkat) })),
+    )
+    schoolFilterCache.schoolTypes = list
   } catch (error) {
     throw new Error('Critical cache initialization failure while loading school filter cache from DB', { cause: error as Error })
   }

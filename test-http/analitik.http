@@ -1,4 +1,22 @@
+# @url = https://sekolahku-api.govtechmy.xyz
+@url = http://localhost:3000
+
 ### Get analitik
-GET http://localhost:3000/analitik
+GET {{url}}/analitik
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - all
+GET {{url}}/analitik/filter/school
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - RENDAH
+GET {{url}}/analitik/filter/school?peringkat=RENDAH
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+### Get filter school type - MENENGAH
+GET {{url}}/analitik/filter/school?peringkat=MENENGAH
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw

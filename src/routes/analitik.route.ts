@@ -1,8 +1,13 @@
 import { authHeaderSchema } from '@schemas'
 import type { FastifyInstance } from 'fastify'
-import { getAnalitikData } from 'src/controllers/analitik.controller'
+import { getAnalitikData, getFilterSchoolTypeWithPeringkat } from 'src/controllers/analitik.controller'
 import { authMiddleware } from 'src/middleware/auth.middleware'
-import { getAnalitikResponseSchema } from 'src/schemas/analitik/response.schema'
+import type { FilterSchoolTypeWithPeringkatQuery } from 'src/schemas/analitik/response.schema'
+import {
+  filterSchoolTypeWithPeringkatQuerySchema,
+  getAnalitikResponseSchema,
+  getFilterSchoolTypeWithPeringkatResponseSchema,
+} from 'src/schemas/analitik/response.schema'
 
 export async function registerAnalitikRoutes(app: FastifyInstance) {
   app.get(
@@ -20,5 +25,23 @@ export async function registerAnalitikRoutes(app: FastifyInstance) {
       },
     },
     getAnalitikData,
+  )
+
+  app.get<{ Querystring: FilterSchoolTypeWithPeringkatQuery }>(
+    '/analitik/filter/school',
+    {
+      preHandler: authMiddleware,
+      schema: {
+        headers: authHeaderSchema,
+        querystring: filterSchoolTypeWithPeringkatQuerySchema,
+        response: {
+          200: getFilterSchoolTypeWithPeringkatResponseSchema,
+        },
+        tags: ['Analitik'],
+        summary: 'Filter School Type by Peringkat',
+        security: [{ 'Sekolahku-X-Api-Key': [] }],
+      },
+    },
+    getFilterSchoolTypeWithPeringkat,
   )
 }

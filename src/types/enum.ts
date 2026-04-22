@@ -34,6 +34,11 @@ export enum NEGERI {
   EAST_MALAYSIA = 'EAST_MALAYSIA',
 }
 
+export enum PERINGKAT {
+  RENDAH = 'RENDAH',
+  MENENGAH = 'MENENGAH',
+}
+
 export enum MARKER_GROUP {
   GROUP = 'GROUP',
   INDIVIDUAL = 'INDIVIDUAL',

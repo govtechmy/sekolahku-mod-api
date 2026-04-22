@@ -1,7 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
-import type { ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
+import type { GetFilterSchoolTypeQuery, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
 import type { EntitiSekolah } from 'src/types/entities'
+import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -30,7 +31,7 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 
 // the function is to list all schools within the radius
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, latitude, longitude } = req.query
+  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, peringkat, latitude, longitude } = req.query
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -59,6 +60,11 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   if (jenis && Array.isArray(jenis) && jenis.length > 0 && !jenis.includes('ALL')) {
     const jenisRegexArray = jenis.map(j => ({ 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(j), $options: 'i' } }))
     conditions.push({ $or: jenisRegexArray })
+  }
+
+  // Filter by peringkat (education level)
+  if (peringkat && peringkat !== 'ALL') {
+    conditions.push({ 'data.infoPentadbiran.peringkat': { $regex: escapeStringRegex(peringkat), $options: 'i' } })
   }
 
   // Combine all conditions with $and
@@ -131,10 +137,18 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   }
 }
 
-export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyReply) {
+// export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
+export async function getFilterSchoolType(req: FastifyRequest<{ Querystring: GetFilterSchoolTypeQuery }>, reply: FastifyReply) {
   try {
     // Get school types from cache instead of querying the database
+    const { peringkat } = req.query
     const cache = req.server.schoolFilterCache
+
+    if (peringkat && peringkat !== 'ALL') {
+      const filteredTypes = cache.schoolTypes.filter(st => st.peringkats?.includes(peringkat)).map(st => st.jenisLabel)
+      return reply.send(createSuccessResponse(filteredTypes))
+    }
+
     const schoolTypes = cache.schoolTypes.map(st => st.jenisLabel)
     return reply.send(createSuccessResponse(schoolTypes))
   } catch (error) {
@@ -142,4 +156,9 @@ export async function getFilterSchoolType(req: FastifyRequest, reply: FastifyRep
     const errResponse = createErrorResponse('Failed to fetch school types. Please try again later.', 'ERR_500', 500)
     return reply.code(500).send(errResponse)
   }
+}
+
+export async function getFilterPeringkat(req: FastifyRequest, reply: FastifyReply) {
+  const peringkatValues = Object.values(PERINGKAT)
+  return reply.send(createSuccessResponse(peringkatValues))
 }
