@@ -58,13 +58,12 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
   // Filter by school type(s) - supports multiple types
   if (jenis && Array.isArray(jenis) && jenis.length > 0 && !jenis.includes('ALL')) {
-    const jenisRegexArray = jenis.map(j => ({ 'data.infoSekolah.jenisLabel': { $regex: escapeStringRegex(j), $options: 'i' } }))
-    conditions.push({ $or: jenisRegexArray })
+    conditions.push({ $or: jenis.map(j => ({ 'data.infoSekolah.jenisLabel': j })) })
   }
 
   // Filter by peringkat (education level)
   if (peringkat && peringkat !== 'ALL') {
-    conditions.push({ 'data.infoPentadbiran.peringkat': { $regex: escapeStringRegex(peringkat), $options: 'i' } })
+    conditions.push({ 'data.infoPentadbiran.peringkat': peringkat })
   }
 
   // Combine all conditions with $and
@@ -119,7 +118,6 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       return reply.send(response)
     } else {
       Object.assign(query, { 'data.infoLokasi.location': { $exists: true } })
-
       const total = await EntitiSekolahModel.countDocuments(query)
       const schools = await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(numericLimit).lean()
       const response = createSuccessResponse({

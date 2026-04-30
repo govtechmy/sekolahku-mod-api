@@ -24,3 +24,9 @@ Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 GET  {{url}}/schools/filter/peringkat
 Content-Type: application/json
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
+
+###
+
+GET  {{url}}/schools/search?latitude=2.936981878329512&longitude=101.69525483049831&page=1&pageSize=12&namaSekolah=&negeri=ALL&jenis=SK&peringkat=RENDAH
+Content-Type: application/json
+Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
