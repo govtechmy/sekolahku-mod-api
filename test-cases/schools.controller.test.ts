@@ -323,6 +323,8 @@ describe('schools controller', () => {
           },
         ],
         'data.infoLokasi.location': { $exists: true },
+        'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
+        'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
       }
       expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith(query)
       expect(EntitiSekolahModel.find).toHaveBeenCalledWith(query)
