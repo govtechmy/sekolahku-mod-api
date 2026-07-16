@@ -157,7 +157,12 @@ async function groupByNegeri(params: {
   name?: string
   centroidCache: CentroidCache
 }) {
-  const query = { 'data.infoLokasi.location': { $exists: true } }
+  // Ensure location exists AND has valid coordinates (not null/empty)
+  const query: Record<string, unknown> = {
+    'data.infoLokasi.location': { $exists: true },
+    'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
+    'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
+  }
 
   if (params.name) {
     const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
