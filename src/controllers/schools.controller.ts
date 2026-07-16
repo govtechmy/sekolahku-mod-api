@@ -120,8 +120,8 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       // Ensure location exists AND has valid coordinates (not null/empty)
       Object.assign(query, {
         'data.infoLokasi.location': { $exists: true },
-        'data.infoLokasi.location.coordinates.0': { $ne: null },
-        'data.infoLokasi.location.coordinates.1': { $ne: null },
+        'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
+        'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
       })
       const total = await EntitiSekolahModel.countDocuments(query)
       const schools = await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(numericLimit).lean()

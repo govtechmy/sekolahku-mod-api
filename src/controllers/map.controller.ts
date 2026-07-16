@@ -90,12 +90,7 @@ async function groupByWestEastMalaysia(params: {
   name?: string
   centroidCache: CentroidCache
 }) {
-  // Ensure location exists AND has valid coordinates (not null/empty)
-  const query: Record<string, unknown> = {
-    'data.infoLokasi.location': { $exists: true },
-    'data.infoLokasi.location.coordinates.0': { $ne: null },
-    'data.infoLokasi.location.coordinates.1': { $ne: null },
-  }
+  const query = { 'data.infoLokasi.location': { $exists: true } }
 
   if (params.name) {
     const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
@@ -165,8 +160,8 @@ async function groupByNegeri(params: {
   // Ensure location exists AND has valid coordinates (not null/empty)
   const query: Record<string, unknown> = {
     'data.infoLokasi.location': { $exists: true },
-    'data.infoLokasi.location.coordinates.0': { $ne: null },
-    'data.infoLokasi.location.coordinates.1': { $ne: null },
+    'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
+    'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
   }
 
   if (params.name) {
