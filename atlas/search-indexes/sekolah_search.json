@@ -1,0 +1,56 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "namaSekolah": [
+        { "type": "string" }
+      ],
+      "kodSekolah": [
+        { "type": "string" },
+        { "type": "token" }
+      ],
+      "data": {
+        "type": "document",
+        "fields": {
+          "infoKomunikasi": {
+            "type": "document",
+            "fields": {
+              "alamatSurat": { "type": "string" },
+              "bandarSurat": { "type": "string" }
+            }
+          },
+          "infoPentadbiran": {
+            "type": "document",
+            "fields": {
+              "parlimen": { "type": "string" },
+              "negeri": [
+                { "type": "string" },
+                { "type": "token" }
+              ],
+              "peringkat": { "type": "token" }
+            }
+          },
+          "infoSekolah": {
+            "type": "document",
+            "fields": {
+              "jenisLabel": { "type": "token" }
+            }
+          },
+          "infoLokasi": {
+            "type": "document",
+            "fields": {
+              "location": { "type": "geo" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "synonyms": [
+    {
+      "name": "school_synonyms",
+      "source": { "collection": "school_synonyms" },
+      "analyzer": "lucene.standard"
+    }
+  ]
+}

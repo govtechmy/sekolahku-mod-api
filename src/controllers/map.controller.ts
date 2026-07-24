@@ -1,5 +1,6 @@
 import { type EntitiSekolah, MARKER_GROUP, NEGERI } from '@types'
-import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { FastifyBaseLogger, FastifyReply, FastifyRequest } from 'fastify'
+import type { PipelineStage } from 'mongoose'
 import { env } from 'src/config/env.config'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import { SystemConfigModel } from 'src/models/system-config.model'
@@ -8,15 +9,64 @@ import type { FindNearbyResponse } from 'src/schemas/schools/response.schema'
 import { type CentroidCache } from 'src/services/centroid-cache.svc'
 import { calculateLocationCenter, getRadiusFromZoom, getZoomFromRadius, resolveGroupCoordinates } from 'src/services/geometry.svc'
 import { groupingFromZoom, makeSchoolObject } from 'src/services/nearby.helper'
-import { escapeStringRegex } from 'src/utils/escape-string-regex'
+import {
+  buildAttributeFilters,
+  buildAttributeMatch,
+  buildNameSearchStage,
+  geoWithinCircleFilter,
+  locationExistsFilter,
+  regexNameOr,
+  type SchoolAttributeFilters,
+} from 'src/services/school-search.svc'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
 const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
 
+/**
+ * Runs an aggregation that optionally filters schools by name and by the negeri/peringkat/jenis
+ * dropdown filters.
+ *  - When `name` is provided it uses fuzzy Atlas Search (typo tolerant + synonyms + code boost)
+ *    as the leading `$search` stage, and gracefully falls back to a regex `$match` if Atlas
+ *    Search is unavailable (mirrors the /schools/search behaviour).
+ *  - When `name` is absent it runs the plain `$match` pipeline (unchanged legacy behaviour).
+ * `atlasFilters` are placed in the `$search` compound `filter` (geo radius / location exists +
+ * attribute `equals`), while `matchConditions` are the equivalent Mongo conditions ANDed together
+ * for the non-name and regex-fallback paths. `downstream` are the stages that follow the leading
+ * stage (e.g. `$group` / `$sort`).
+ */
+async function aggregateSchoolsByName<T>(opts: {
+  name?: string
+  atlasFilters: Record<string, unknown>[]
+  matchConditions: Record<string, unknown>[]
+  downstream: PipelineStage[]
+  log?: FastifyBaseLogger
+}): Promise<T[]> {
+  const { name, atlasFilters, matchConditions, downstream, log } = opts
+
+  // Combine all conditions under `$and` so multiple `$or` clauses (e.g. jenis + name regex)
+  // don't overwrite each other in a single object.
+  const buildMatch = (extra: Record<string, unknown>[] = []): Record<string, unknown> => {
+    const all = [...extra, ...matchConditions]
+    return all.length > 0 ? { $and: all } : {}
+  }
+
+  if (!name) {
+    return EntitiSekolahModel.aggregate<T>([{ $match: buildMatch() } as PipelineStage, ...downstream])
+  }
+
+  try {
+    return await EntitiSekolahModel.aggregate<T>([buildNameSearchStage(name, atlasFilters), ...downstream])
+  } catch (error) {
+    // Atlas Search unavailable → graceful regex fallback within the same base + attribute conditions.
+    log?.error({ err: error }, 'find-nearby:atlas-search:fallback-to-regex')
+    return EntitiSekolahModel.aggregate<T>([{ $match: buildMatch([regexNameOr(name)]) } as PipelineStage, ...downstream])
+  }
+}
+
 // the function is to list all schools within the radius
 export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>, reply: FastifyReply) {
   // All query validation handled by Zod via route schema
-  const { latitude, longitude, name } = req.query
+  const { latitude, longitude, name, negeri, peringkat, jenis } = req.query
   let { radiusInMeter, zoom } = req.query
 
   if (longitude === undefined || latitude === undefined || radiusInMeter === undefined) {
@@ -43,6 +93,9 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
   const radiusConfig = await SystemConfigModel.findOne({ key: 'radiusInMeter' })
   const radius = Number(radiusConfig?.value ?? 100000)
   const effectiveRadius = radiusInMeter ?? radius
+  // negeri / peringkat / jenis dropdown filters — applied to both name and radius searches so the
+  // map markers narrow down the same way the sidebar list does.
+  const attributes: SchoolAttributeFilters = { negeri, peringkat, jenis }
 
   if (name) {
     const response = await searchByName({
@@ -53,6 +106,8 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       grouping,
       viewInfoLokasi,
       centroidCache,
+      attributes,
+      log: req.log,
     })
 
     if (response) {
@@ -71,6 +126,8 @@ export async function getFindNearby(req: FastifyRequest<{ Querystring: GetNearby
       grouping,
       viewInfoLokasi,
       centroidCache,
+      attributes,
+      log: req.log,
     })
     if (response) {
       return reply.send(createSuccessResponse(response))
@@ -89,44 +146,39 @@ async function groupByWestEastMalaysia(params: {
   longitude: number
   name?: string
   centroidCache: CentroidCache
+  attributes?: SchoolAttributeFilters
+  log?: FastifyBaseLogger
 }) {
   // Ensure location exists AND has valid numeric coordinates (consistent with other groupBy functions)
-  const query: Record<string, unknown> = {
+  const existsConditions: Record<string, unknown> = {
     'data.infoLokasi.location': { $exists: true },
     'data.infoLokasi.location.coordinates.0': { $exists: true, $type: 'number' },
     'data.infoLokasi.location.coordinates.1': { $exists: true, $type: 'number' },
   }
+  const attributes = params.attributes ?? {}
 
-  if (params.name) {
-    const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
-    Object.assign(query, {
-      $or: [
-        { namaSekolah: regexObj },
-        { 'data.infoKomunikasi.alamatSurat': regexObj },
-        { 'data.infoKomunikasi.bandarSurat': regexObj },
-        { 'data.infoPentadbiran.parlimen': regexObj },
-        { 'data.infoPentadbiran.negeri': regexObj },
-      ],
-    })
-  }
-
-  const westEastTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
-    { $match: query },
-    { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
-    {
-      $addFields: {
-        region: {
-          $cond: {
-            if: { $in: ['$_id', [NEGERI.SABAH, NEGERI.SARAWAK]] },
-            then: NEGERI.EAST_MALAYSIA,
-            else: NEGERI.WEST_MALAYSIA,
+  const westEastTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
+    name: params.name,
+    atlasFilters: [locationExistsFilter(), ...buildAttributeFilters(attributes)],
+    matchConditions: [existsConditions, ...buildAttributeMatch(attributes)],
+    downstream: [
+      { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
+      {
+        $addFields: {
+          region: {
+            $cond: {
+              if: { $in: ['$_id', [NEGERI.SABAH, NEGERI.SARAWAK]] },
+              then: NEGERI.EAST_MALAYSIA,
+              else: NEGERI.WEST_MALAYSIA,
+            },
           },
         },
       },
-    },
-    { $group: { _id: '$region', total: { $sum: '$total' } } },
-    { $sort: { _id: 1 as const } },
-  ])
+      { $group: { _id: '$region', total: { $sum: '$total' } } },
+      { $sort: { _id: 1 as const } },
+    ],
+    log: params.log,
+  })
 
   const keys = westEastTotals.map(item => item._id)
 
@@ -161,33 +213,27 @@ async function groupByNegeri(params: {
   longitude: number
   name?: string
   centroidCache: CentroidCache
+  attributes?: SchoolAttributeFilters
+  log?: FastifyBaseLogger
 }) {
   // Ensure location exists AND has valid numeric coordinates
-  const query: Record<string, unknown> = {
+  const existsConditions: Record<string, unknown> = {
     'data.infoLokasi.location': { $exists: true },
     'data.infoLokasi.location.coordinates.0': { $exists: true, $type: 'number' },
     'data.infoLokasi.location.coordinates.1': { $exists: true, $type: 'number' },
   }
+  const attributes = params.attributes ?? {}
 
-  if (params.name) {
-    const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
-    Object.assign(query, {
-      $or: [
-        { namaSekolah: regexObj },
-        { 'data.infoKomunikasi.alamatSurat': regexObj },
-        { 'data.infoKomunikasi.bandarSurat': regexObj },
-        { 'data.infoPentadbiran.parlimen': regexObj },
-        { 'data.infoPentadbiran.negeri': regexObj },
-      ],
-    })
-  }
-
-  const finalQuery = [
-    { $match: query },
-    { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
-    { $sort: { _id: 1 as const } },
-  ]
-  const negeriTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>(finalQuery)
+  const negeriTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
+    name: params.name,
+    atlasFilters: [locationExistsFilter(), ...buildAttributeFilters(attributes)],
+    matchConditions: [existsConditions, ...buildAttributeMatch(attributes)],
+    downstream: [
+      { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
+      { $sort: { _id: 1 as const } },
+    ],
+    log: params.log,
+  })
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
   const markerGroups = negeriKeys.map(negeriKey => {
     const centroid = params.centroidCache.negeri[negeriKey]
@@ -220,33 +266,28 @@ async function groupByParlimen(params: {
   effectiveRadius: number
   name?: string
   centroidCache: CentroidCache
+  attributes?: SchoolAttributeFilters
+  log?: FastifyBaseLogger
 }) {
-  const query = {
+  const geoCondition: Record<string, unknown> = {
     'data.infoLokasi.location': {
       $geoWithin: {
         $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
       },
     },
   }
+  const attributes = params.attributes ?? {}
 
-  if (params.name) {
-    const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
-    Object.assign(query, {
-      $or: [
-        { namaSekolah: regexObj },
-        { 'data.infoKomunikasi.alamatSurat': regexObj },
-        { 'data.infoKomunikasi.bandarSurat': regexObj },
-        { 'data.infoPentadbiran.parlimen': regexObj },
-        { 'data.infoPentadbiran.negeri': regexObj },
-      ],
-    })
-  }
-
-  const parlimenTotals = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
-    { $match: query },
-    { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
-    { $sort: { _id: 1 as const } },
-  ])
+  const parlimenTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
+    name: params.name,
+    atlasFilters: [geoWithinCircleFilter(params.longitude, params.latitude, params.effectiveRadius), ...buildAttributeFilters(attributes)],
+    matchConditions: [geoCondition, ...buildAttributeMatch(attributes)],
+    downstream: [
+      { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
+      { $sort: { _id: 1 as const } },
+    ],
+    log: params.log,
+  })
 
   const parlimenKeys = Array.from(parlimenTotals).map(item => item._id)
   const markerGroups = parlimenKeys.map(parlimenKey => {
@@ -283,29 +324,27 @@ async function searchByName(params: {
   grouping: MARKER_GROUP
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   centroidCache: CentroidCache
+  attributes?: SchoolAttributeFilters
+  log?: FastifyBaseLogger
 }) {
-  const query = {
+  const geoCondition: Record<string, unknown> = {
     'data.infoLokasi.location': {
       $geoWithin: {
         $centerSphere: [[params.longitude, params.latitude], params.effectiveRadius / EARTH_RADIUS_IN_METERS],
       },
     },
   }
+  const attributes = params.attributes ?? {}
 
-  if (params.name) {
-    const regexObj = { $regex: escapeStringRegex(params.name), $options: 'i' }
-    Object.assign(query, {
-      $or: [
-        { namaSekolah: regexObj },
-        { 'data.infoKomunikasi.alamatSurat': regexObj },
-        { 'data.infoKomunikasi.bandarSurat': regexObj },
-        { 'data.infoPentadbiran.parlimen': regexObj },
-        { 'data.infoPentadbiran.negeri': regexObj },
-      ],
-    })
-  }
-
-  const foundSchools = await EntitiSekolahModel.aggregate<EntitiSekolah>([{ $match: query }, { $sort: { namaSekolah: 1 } }])
+  // Fuzzy Atlas Search (typo tolerant + synonyms + code) within the geo radius and dropdown
+  // filters, with regex fallback.
+  const foundSchools = await aggregateSchoolsByName<EntitiSekolah>({
+    name: params.name,
+    atlasFilters: [geoWithinCircleFilter(params.longitude, params.latitude, params.effectiveRadius), ...buildAttributeFilters(attributes)],
+    matchConditions: [geoCondition, ...buildAttributeMatch(attributes)],
+    downstream: [{ $sort: { namaSekolah: 1 as const } }],
+    log: params.log,
+  })
 
   if (params.grouping === MARKER_GROUP.INDIVIDUAL) {
     const markerGroups = foundSchools.map(school => {
@@ -337,6 +376,8 @@ async function searchByName(params: {
       longitude: params.longitude,
       name: params.name,
       centroidCache: params.centroidCache,
+      attributes: params.attributes,
+      log: params.log,
     })
     return response
   }
@@ -375,6 +416,8 @@ async function searchByName(params: {
         longitude: params.longitude,
         name: params.name,
         centroidCache: params.centroidCache,
+        attributes: params.attributes,
+        log: params.log,
       })
       return response
     }
@@ -422,6 +465,8 @@ async function searchByName(params: {
         effectiveRadius: params.effectiveRadius,
         name: params.name,
         centroidCache: params.centroidCache,
+        attributes: params.attributes,
+        log: params.log,
       })
       return response
     }
@@ -443,9 +488,11 @@ async function searchByRadius(params: {
   grouping: MARKER_GROUP
   viewInfoLokasi: { koordinatXX: number; koordinatYY: number; zoom: number }
   centroidCache: CentroidCache
+  attributes?: SchoolAttributeFilters
+  log?: FastifyBaseLogger
 }) {
   if (params.grouping === MARKER_GROUP.INDIVIDUAL) {
-    const query = {
+    const query: Record<string, unknown> = {
       'data.infoLokasi.location': {
         $nearSphere: {
           $geometry: {
@@ -455,6 +502,11 @@ async function searchByRadius(params: {
           $maxDistance: params.effectiveRadius,
         },
       },
+    }
+    // Apply the negeri/peringkat/jenis dropdown filters to the individual markers as well.
+    const attrConditions = buildAttributeMatch(params.attributes ?? {})
+    if (attrConditions.length > 0) {
+      query.$and = attrConditions
     }
     const sekolahInRadius = await EntitiSekolahModel.find(query).lean<EntitiSekolah[]>()
 
@@ -482,6 +534,8 @@ async function searchByRadius(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       centroidCache: params.centroidCache,
+      attributes: params.attributes,
+      log: params.log,
     })
     return response
   }
@@ -492,6 +546,8 @@ async function searchByRadius(params: {
       latitude: params.latitude,
       longitude: params.longitude,
       centroidCache: params.centroidCache,
+      attributes: params.attributes,
+      log: params.log,
     })
     return response
   }
@@ -503,6 +559,8 @@ async function searchByRadius(params: {
       longitude: params.longitude,
       effectiveRadius: params.effectiveRadius,
       centroidCache: params.centroidCache,
+      attributes: params.attributes,
+      log: params.log,
     })
     return response
   }
