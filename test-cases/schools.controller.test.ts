@@ -290,6 +290,103 @@ describe('schools controller', () => {
         },
       })
     })
+
+    test('with a name should use fuzzy Atlas $search with geo + attribute filters', async () => {
+      const mockSchool = {
+        kodSekolah: 'BBA8238',
+        namaSekolah: 'SK Gombak',
+        data: {
+          infoLokasi: { location: { coordinates: [101.508713, 3.088043] } },
+          infoPentadbiran: { negeri: 'SELANGOR', parlimen: 'SHAH_ALAM' },
+        },
+      }
+      // grouping resolves to INDIVIDUAL (getZoomFromRadius mock -> 15), so searchByName issues a
+      // single aggregate($search) call.
+      mockedModel.aggregate.mockResolvedValueOnce([mockSchool])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: {
+          latitude: 3.1,
+          longitude: 101.5,
+          radiusInMeter: 8000,
+          name: 'skm gombak',
+          negeri: 'SELANGOR',
+          jenis: ['Sekolah Rendah'],
+          peringkat: 'RENDAH',
+        },
+        log: { error: mock(() => ({})) },
+        server: { centroidCache: {} },
+      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+
+      await getFindNearby(mockReq, mockReply)
+
+      const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
+      const search = (pipeline[0] as { $search: { index: string; compound: Record<string, unknown> } }).$search
+      expect(search.index).toBe('sekolah_search')
+
+      const mustStr = JSON.stringify(search.compound.must)
+      expect(mustStr).toContain('fuzzy')
+      expect(mustStr).toContain('school_synonyms')
+      expect(mustStr).toContain('kodSekolah')
+
+      const filterStr = JSON.stringify(search.compound.filter)
+      expect(filterStr).toContain('geoWithin')
+      expect(filterStr).toContain('data.infoPentadbiran.negeri')
+      expect(filterStr).toContain('data.infoSekolah.jenisLabel')
+      expect(filterStr).toContain('data.infoPentadbiran.peringkat')
+
+      expect(mockReply.send).toHaveBeenCalled()
+    })
+
+    test('with a name should fall back to regex $match (with filters) when Atlas Search fails', async () => {
+      const mockSchool = {
+        kodSekolah: 'BBA8238',
+        namaSekolah: 'SK Gombak',
+        data: {
+          infoLokasi: { location: { coordinates: [101.508713, 3.088043] } },
+          infoPentadbiran: { negeri: 'SELANGOR', parlimen: 'SHAH_ALAM' },
+        },
+      }
+      // First aggregate ($search) throws -> graceful regex fallback on the second aggregate.
+      mockedModel.aggregate.mockRejectedValueOnce(new Error('atlas unavailable')).mockResolvedValueOnce([mockSchool])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: {
+          latitude: 3.1,
+          longitude: 101.5,
+          radiusInMeter: 8000,
+          name: 'skm gombak',
+          negeri: 'SELANGOR',
+          jenis: ['Sekolah Rendah'],
+        },
+        log: { error: mock(() => ({})) },
+        server: { centroidCache: {} },
+      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+
+      await getFindNearby(mockReq, mockReply)
+
+      const fallbackPipeline = mockedModel.aggregate.mock.calls[1]?.[0] as Record<string, unknown>[]
+      const match = (fallbackPipeline[0] as { $match: { $and: Record<string, unknown>[] } }).$match
+      expect(Array.isArray(match.$and)).toBe(true)
+
+      const andStr = JSON.stringify(match.$and)
+      expect(andStr).toContain('$regex') // fuzzy name fell back to regex
+      expect(andStr).toContain('$geoWithin') // geo radius preserved
+      expect(andStr).toContain('data.infoPentadbiran.negeri') // negeri filter preserved
+      expect(andStr).toContain('data.infoSekolah.jenisLabel') // jenis filter preserved
+
+      expect(mockReply.send).toHaveBeenCalled()
+    })
   })
 
   describe('getSchoolsSearchSuggestion', () => {
@@ -360,6 +457,36 @@ describe('schools controller', () => {
 
       expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
       expect(mockReply.send).toHaveBeenCalled()
+    })
+
+    test('should include fuzzy name + negeri/jenis/peringkat filters in the Atlas $search compound', async () => {
+      // data pipeline (aggregate #1) + $searchMeta count (aggregate #2)
+      mockedModel.aggregate.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: { total: 0 } }])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'skm gombak', negeri: 'SELANGOR', jenis: ['Sekolah Rendah'], peringkat: 'RENDAH' },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
+      const search = (pipeline[0] as { $search: { index: string; compound: Record<string, unknown> } }).$search
+      expect(search.index).toBe('sekolah_search')
+
+      const mustStr = JSON.stringify(search.compound.must)
+      expect(mustStr).toContain('fuzzy')
+      expect(mustStr).toContain('school_synonyms')
+
+      const filterStr = JSON.stringify(search.compound.filter)
+      expect(filterStr).toContain('data.infoPentadbiran.negeri')
+      expect(filterStr).toContain('data.infoSekolah.jenisLabel')
+      expect(filterStr).toContain('data.infoPentadbiran.peringkat')
     })
 
     test('should handle error', async () => {

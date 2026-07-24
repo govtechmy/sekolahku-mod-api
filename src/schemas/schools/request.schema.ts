@@ -99,6 +99,18 @@ export const getNearbySchoolByLocationSchema = z.object({
     .refine(v => v >= -180 && v <= 180)
     .optional(),
   zoom: z.coerce.number().int().min(0).max(25).optional(),
+  negeri: z.enum([...Object.values(NEGERI), 'ALL']).optional(),
+  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
+  jenis: z
+    .string()
+    .optional()
+    .transform(val => {
+      if (!val) return undefined
+      return val
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v.length > 0)
+    }),
 })
 
 export type GetNearbySchoolByLocation = z.infer<typeof getNearbySchoolByLocationSchema>

@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { PipelineStage } from 'mongoose'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { GetFilterSchoolTypeQuery, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
+import { buildAttributeFilters, buildAttributeMatch, buildFuzzyNameMust, geoWithinCircleFilter, SCHOOL_SEARCH_INDEX } from 'src/services/school-search.svc'
 import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
@@ -30,11 +31,8 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
   return reply.send(createSuccessResponse(doc))
 }
 
-// Atlas Search index name (see atlas/search-indexes/sekolah_search.json)
-const SCHOOL_SEARCH_INDEX = 'sekolah_search'
-// Atlas Search synonym mapping name (source collection: school_synonyms).
-// Handles abbreviations like "smk" -> "sekolah menengah kebangsaan".
-const SCHOOL_SYNONYMS = 'school_synonyms'
+// Atlas Search index/synonyms constants and query builders live in school-search.svc.ts so
+// /schools/search and /schools/find-nearby share a single fuzzy-search implementation.
 // Default geo radius (meters) when latitude/longitude are provided without radiusInMeter.
 // Client requirement: show schools within 8km of the user's location by default.
 const DEFAULT_GEO_RADIUS_METERS = 8_000
@@ -77,17 +75,7 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     })
   }
 
-  if (negeri && negeri !== 'ALL') {
-    conditions.push({ 'data.infoPentadbiran.negeri': negeri })
-  }
-
-  if (jenis && jenis.length > 0 && !jenis.includes('ALL')) {
-    conditions.push({ $or: jenis.map(j => ({ 'data.infoSekolah.jenisLabel': j })) })
-  }
-
-  if (peringkat && peringkat !== 'ALL') {
-    conditions.push({ 'data.infoPentadbiran.peringkat': peringkat })
-  }
+  conditions.push(...buildAttributeMatch({ negeri, peringkat, jenis }))
 
   const query: Record<string, unknown> = conditions.length > 0 ? { $and: conditions } : {}
 
@@ -161,74 +149,22 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   // (If these were in `should`, the proximity `near` clause could satisfy minimumShouldMatch
   // on its own and return non-matching schools.)
   if (namaSekolah) {
-    const textShould: Record<string, unknown>[] = [
-      {
-        text: {
-          query: namaSekolah,
-          path: [
-            'namaSekolah',
-            'data.infoKomunikasi.alamatSurat',
-            'data.infoKomunikasi.bandarSurat',
-            'data.infoPentadbiran.parlimen',
-            'data.infoPentadbiran.negeri',
-          ],
-          fuzzy: { maxEdits: 2, prefixLength: 1 },
-        },
-      },
-      // Abbreviation/synonym matching (e.g. "smk gombak" -> "sekolah menengah kebangsaan gombak").
-      // synonyms cannot be combined with fuzzy in the same text operator, so it is a separate clause.
-      {
-        text: {
-          query: namaSekolah,
-          path: 'namaSekolah',
-          synonyms: SCHOOL_SYNONYMS,
-        },
-      },
-      // Search by school code (kodSekolah, e.g. "WEA2001"). Exact/analyzed match (no fuzzy),
-      // boosted so a code match ranks above name matches.
-      {
-        text: {
-          query: namaSekolah,
-          path: 'kodSekolah',
-          score: { boost: { value: 5 } },
-        },
-      },
-    ]
-    must.push({ compound: { should: textShould, minimumShouldMatch: 1 } })
+    // Fuzzy (typo) OR synonyms (abbreviations) OR code, shared with /schools/find-nearby via
+    // school-search.svc.ts. Placed in `must` so a text query is mandatory (a geo/proximity
+    // clause alone must not satisfy the match).
+    must.push(buildFuzzyNameMust(namaSekolah))
   }
 
-  // Req 3 — filters (negeri / jenis / peringkat)
-  if (negeri && negeri !== 'ALL') {
-    filter.push({ equals: { path: 'data.infoPentadbiran.negeri', value: negeri } })
-  }
-
-  if (jenis && jenis.length > 0 && !jenis.includes('ALL')) {
-    filter.push({
-      compound: {
-        should: jenis.map(j => ({ equals: { path: 'data.infoSekolah.jenisLabel', value: j } })),
-        minimumShouldMatch: 1,
-      },
-    })
-  }
-
-  if (peringkat && peringkat !== 'ALL') {
-    filter.push({ equals: { path: 'data.infoPentadbiran.peringkat', value: peringkat } })
-  }
+  // Req 3 — filters (negeri / jenis / peringkat). Shared with /schools/find-nearby via
+  // school-search.svc.ts so the sidebar list and the map markers filter identically.
+  filter.push(...buildAttributeFilters({ negeri, peringkat, jenis }))
 
   // Req 4 — geo. Two parts:
   //  1) filter (hard limit): only schools within the radius (default 8km) are returned.
   //  2) should `near` (soft rank): closer schools score higher, so the nearest appear first.
   if (hasGeo) {
     const radius = radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS
-    filter.push({
-      geoWithin: {
-        circle: {
-          center: { type: 'Point', coordinates: [longitude, latitude] },
-          radius,
-        },
-        path: 'data.infoLokasi.location',
-      },
-    })
+    filter.push(geoWithinCircleFilter(longitude!, latitude!, radius))
     should.push({
       near: {
         origin: { type: 'Point', coordinates: [longitude, latitude] },

@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- CLI seed script: console output is the intended UX */
 /**
  * Seed the Atlas Search synonym source collection (`school_synonyms`) from the
  * version-controlled definition at `atlas/synonyms/school_synonyms.json`.
