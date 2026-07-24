@@ -1,0 +1,67 @@
+@url = http://localhost:3001
+# @url = https://sekolahku-api.govtechmy.xyz
+@apiKey = ABC343423232o3u243udbsjdfbw
+
+### ─────────────────────────────────────────────────────────────
+### FUZZY SEARCH — /schools/search (Atlas Search)
+### Nota: perlu sambung ke cluster Atlas dev (index `sekolah_search`).
+### ─────────────────────────────────────────────────────────────
+
+### 1) Fuzzy — ejaan salah patut tetap jumpa "SEKOLAH MENENGAH KEBANGSAAN ..."
+GET {{url}}/schools/search?namaSekolah=sekola menengah kebngsaan
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 2) Fuzzy — typo satu perkataan
+GET {{url}}/schools/search?namaSekolah=kebngsaan
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 3) Padanan tepat vs hampir — padanan lebih relevan patut di atas
+GET {{url}}/schools/search?namaSekolah=tunku abdul rahman
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 4) Multi-field — cari ikut bandar / alamat
+GET {{url}}/schools/search?namaSekolah=petaling
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 5) Fuzzy + penapis negeri
+GET {{url}}/schools/search?namaSekolah=sekolah&negeri=JOHOR
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 6) Penapis jenis (berbilang) tanpa istilah teks
+GET {{url}}/schools/search?jenis=SK,SJK&negeri=SELANGOR
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 7) Penapis peringkat
+GET {{url}}/schools/search?peringkat=RENDAH&negeri=SELANGOR
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 8) Gabungan penuh: fuzzy + negeri + jenis + peringkat
+GET {{url}}/schools/search?namaSekolah=kebangsaan&negeri=SELANGOR&jenis=SK&peringkat=RENDAH
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 9) Fuzzy + lokasi (radius 50km sekitar KL)
+GET {{url}}/schools/search?namaSekolah=sekolah&latitude=3.139&longitude=101.6869&radiusInMeter=50000
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 10) Lokasi sahaja (tanpa istilah teks) — disusun ikut nama
+GET {{url}}/schools/search?latitude=3.139&longitude=101.6869&radiusInMeter=50000
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 11) Pagination + totalRecords (halaman 1)
+GET {{url}}/schools/search?namaSekolah=sekolah&page=1&pageSize=5
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 12) Pagination — halaman 2 (patut lain daripada #11, totalRecords sama)
+GET {{url}}/schools/search?namaSekolah=sekolah&page=2&pageSize=5
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 13) Tiada kriteria langsung — senarai biasa (sekolah berkoordinat sah)
+GET {{url}}/schools/search?page=1&pageSize=12
+Sekolahku-X-Api-Key: {{apiKey}}
+
+### 14) Tiada API key — patut 401
+GET {{url}}/schools/search?namaSekolah=sekolah
+
+### 15) API key salah — patut 401
+GET {{url}}/schools/search?namaSekolah=sekolah
+Sekolahku-X-Api-Key: wrong-key
