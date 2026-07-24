@@ -30,7 +30,8 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "bun test",
-    "test:coverage": "bun test --coverage"
+    "test:coverage": "bun test --coverage",
+    "seed:synonyms": "bun scripts/seed-synonyms.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.957.0",

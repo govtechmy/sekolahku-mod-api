@@ -295,8 +295,9 @@ describe('schools controller', () => {
   describe('getSchoolsSearchSuggestion', () => {
     test('should return search results without location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockQuery.lean.mockResolvedValue(mockSchools)
-      mockedModel.countDocuments = mock(() => Promise.resolve(1))
+      // A text query (no location) now uses Atlas Search: aggregate($search) for data +
+      // aggregate($searchMeta) for the total count.
+      mockedModel.aggregate.mockResolvedValueOnce(mockSchools).mockResolvedValueOnce([{ count: { total: 1 } }])
 
       const mockReply = {
         send: mock(() => ({})),
@@ -310,24 +311,7 @@ describe('schools controller', () => {
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
-      const query = {
-        $and: [
-          {
-            $or: [
-              { namaSekolah: { $regex: 'Test', $options: 'i' } },
-              { 'data.infoKomunikasi.alamatSurat': { $regex: 'Test', $options: 'i' } },
-              { 'data.infoKomunikasi.bandarSurat': { $regex: 'Test', $options: 'i' } },
-              { 'data.infoPentadbiran.parlimen': { $regex: 'Test', $options: 'i' } },
-              { 'data.infoPentadbiran.negeri': { $regex: 'Test', $options: 'i' } },
-            ],
-          },
-        ],
-        'data.infoLokasi.location': { $exists: true },
-        'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
-        'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
-      }
-      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledWith(query)
-      expect(EntitiSekolahModel.find).toHaveBeenCalledWith(query)
+      expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,

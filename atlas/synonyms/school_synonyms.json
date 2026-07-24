@@ -1,0 +1,10 @@
+[
+  { "mappingType": "equivalent", "synonyms": ["smk", "sekolah menengah kebangsaan"] },
+  { "mappingType": "equivalent", "synonyms": ["sk", "sekolah kebangsaan"] },
+  { "mappingType": "equivalent", "synonyms": ["sjkc", "sekolah jenis kebangsaan cina"] },
+  { "mappingType": "equivalent", "synonyms": ["sjkt", "sekolah jenis kebangsaan tamil"] },
+  { "mappingType": "equivalent", "synonyms": ["smka", "sekolah menengah kebangsaan agama"] },
+  { "mappingType": "equivalent", "synonyms": ["sbp", "sekolah berasrama penuh"] },
+  { "mappingType": "equivalent", "synonyms": ["smjk", "sekolah menengah jenis kebangsaan"] },
+  { "mappingType": "equivalent", "synonyms": ["kv", "kolej vokasional"] }
+]
