@@ -459,6 +459,36 @@ describe('schools controller', () => {
       expect(mockReply.send).toHaveBeenCalled()
     })
 
+    test('should sort by name for geo-only search without text query', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
+      mockedModel.aggregate.mockResolvedValueOnce(mockSchools).mockResolvedValueOnce([{ count: { total: 1 } }])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
+      const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
+      expect(JSON.stringify(pipeline)).toContain('"$sort":{"namaSekolah":1}')
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          items: mockSchools,
+          totalRecords: 1,
+          pageNumber: 1,
+          pageSize: 25,
+        },
+      })
+    })
+
     test('should include fuzzy name + negeri/jenis/peringkat filters in the Atlas $search compound', async () => {
       // data pipeline (aggregate #1) + $searchMeta count (aggregate #2)
       mockedModel.aggregate.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: { total: 0 } }])

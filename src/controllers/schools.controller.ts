@@ -7,6 +7,7 @@ import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
+import { ratio, WRatio } from 'fuzzball'
 
 import type { CreateSchoolBody } from '@/schemas'
 
@@ -53,6 +54,85 @@ type SchoolSearchParams = {
 
 type SchoolSearchResult = { items: EntitiSekolah[]; total: number }
 
+function normalizeWords(value: string): string {
+  const decomposed = value.normalize('NFKD')
+  const stripped = decomposed.replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+  const removedDiacritics = stripped.replace(/\p{M}/gu, '')
+  const upperCased = removedDiacritics.toUpperCase().replace(/&/g, ' DAN ')
+  return (upperCased.match(/[A-Z0-9]+/g) ?? []).join(' ')
+}
+
+function normalizeCompact(value: string): string {
+  return normalizeWords(value).replace(/ /g, '')
+}
+
+function hybridFuzzyScore(query: string, value: string): number {
+  const normalizedQuery = normalizeWords(query)
+  const normalizedValue = normalizeWords(value)
+  if (!normalizedValue) {
+    return 0
+  }
+
+  if (normalizeCompact(query) === normalizeCompact(value)) {
+    return 100
+  }
+
+  const queryTokens = normalizedQuery.split(' ').filter(Boolean)
+  const valueTokens = normalizedValue.split(' ').filter(Boolean)
+
+  if (queryTokens.length > 0 && queryTokens.every(token => valueTokens.includes(token))) {
+    return 100
+  }
+
+  if (
+    queryTokens.length > 0 &&
+    queryTokens.every(token => valueTokens.some(valueToken => valueToken.startsWith(token)))
+  ) {
+    return 95
+  }
+
+  const tokenScore =
+    queryTokens.length > 0
+      ? queryTokens.reduce((sum, token) => {
+          const best = Math.max(
+            ...valueTokens.map(valueToken => ratio(token, valueToken, { full_process: false })),
+            0,
+          )
+          return sum + best
+        }, 0) / queryTokens.length
+      : 0
+
+  const compactScore = ratio(normalizeCompact(query), normalizeCompact(value), { full_process: false })
+  const wRatioScore = WRatio(normalizedQuery, normalizedValue, { full_process: false })
+  const tokenCoverage = Math.min(1, queryTokens.length / Math.max(1, valueTokens.length))
+
+  return Math.max(tokenScore, compactScore, wRatioScore) * (0.75 + 0.2 * tokenCoverage)
+}
+
+function scoreSchoolMatch(query: string, school: EntitiSekolah): number {
+  const fields = [
+    { field: 'KODSEKOLAH', value: school.kodSekolah },
+    { field: 'NAMA_SEKOLAH', value: school.namaSekolah },
+    { field: 'ALAMAT_SURAT', value: school.data?.infoKomunikasi?.alamatSurat },
+    { field: 'BANDAR_SURAT', value: school.data?.infoKomunikasi?.bandarSurat },
+    { field: 'PARLIMEN', value: school.data?.infoPentadbiran?.parlimen },
+    { field: 'NEGERI', value: school.data?.infoPentadbiran?.negeri },
+  ]
+
+  let best = 0
+  for (const item of fields) {
+    if (!item.value) continue
+    const score = hybridFuzzyScore(query, String(item.value))
+    if (item.field === 'KODSEKOLAH' && normalizeCompact(query) === normalizeCompact(String(item.value))) {
+      best = Math.max(best, 100)
+    } else {
+      best = Math.max(best, score)
+    }
+  }
+
+  return best
+}
+
 /**
  * Legacy regex-based search. Used when there are no search criteria (plain list)
  * and as a graceful fallback when Atlas Search is unavailable.
@@ -95,12 +175,34 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     const countResult = await EntitiSekolahModel.aggregate([geoNearStage, { $count: 'total' }] as unknown as PipelineStage[])
     const total = (countResult[0] as { total?: number } | undefined)?.total ?? 0
 
-    const items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
+    const geoSort = namaSekolah
+      ? { $sort: { distance: 1, namaSekolah: 1 } }
+      : { $sort: { namaSekolah: 1 } }
+
+    let items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
       geoNearStage,
-      { $sort: { distance: 1, namaSekolah: 1 } },
+      geoSort,
       { $skip: skip },
       { $limit: limit },
     ] as unknown as PipelineStage[])
+
+    if (namaSekolah) {
+      items = items
+        .map(item => ({ item, score: scoreSchoolMatch(namaSekolah, item), distance: (item as any).distance }))
+        .sort((left, right) => {
+          const scoreDiff = right.score - left.score
+          if (scoreDiff !== 0) {
+            return scoreDiff
+          }
+          const aDist = left.distance ?? 0
+          const bDist = right.distance ?? 0
+          if (aDist !== bDist) {
+            return aDist - bDist
+          }
+          return String(left.item.namaSekolah).localeCompare(String(right.item.namaSekolah))
+        })
+        .map(({ item }) => item)
+    }
 
     return { items, total }
   }
@@ -113,7 +215,20 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   })
 
   const total = await EntitiSekolahModel.countDocuments(query)
-  const items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
+  let items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
+
+  if (namaSekolah) {
+    items = items
+      .map(item => ({ item, score: scoreSchoolMatch(namaSekolah, item) }))
+      .sort((left, right) => {
+        const scoreDiff = right.score - left.score
+        if (scoreDiff !== 0) {
+          return scoreDiff
+        }
+        return String(left.item.namaSekolah).localeCompare(String(right.item.namaSekolah))
+      })
+      .map(({ item }) => item)
+  }
 
   return { items, total }
 }
@@ -159,19 +274,24 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   // school-search.svc.ts so the sidebar list and the map markers filter identically.
   filter.push(...buildAttributeFilters({ negeri, peringkat, jenis }))
 
+  const hasText = typeof namaSekolah === 'string' && namaSekolah.trim().length > 0
+
   // Req 4 — geo. Two parts:
   //  1) filter (hard limit): only schools within the radius (default 8km) are returned.
   //  2) should `near` (soft rank): closer schools score higher, so the nearest appear first.
+  //     Only apply proximity scoring when a text query exists.
   if (hasGeo) {
     const radius = radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS
     filter.push(geoWithinCircleFilter(longitude!, latitude!, radius))
-    should.push({
-      near: {
-        origin: { type: 'Point', coordinates: [longitude, latitude] },
-        pivot: GEO_PROXIMITY_PIVOT_METERS,
-        path: 'data.infoLokasi.location',
-      },
-    })
+    if (hasText) {
+      should.push({
+        near: {
+          origin: { type: 'Point', coordinates: [longitude, latitude] },
+          pivot: GEO_PROXIMITY_PIVOT_METERS,
+          path: 'data.infoLokasi.location',
+        },
+      })
+    }
   }
 
   const hasSearchCriteria = must.length > 0 || should.length > 0 || filter.length > 0
@@ -199,9 +319,8 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     const searchStage = { $search: { index: SCHOOL_SEARCH_INDEX, compound } } as unknown as PipelineStage
 
     const dataPipeline: PipelineStage[] = [searchStage]
-    // Rely on the search score to order results when there's a text query or geo proximity
-    // ranking (nearest first). For a pure attribute-filter listing, sort by name for stability.
-    if (!namaSekolah && !hasGeo) {
+    // If there is no text query, order by name for stability even when geo filters exist.
+    if (!hasText) {
       dataPipeline.push({ $sort: { namaSekolah: 1 } })
     }
     dataPipeline.push({ $skip: skip }, { $limit: numericLimit })
