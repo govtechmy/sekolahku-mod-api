@@ -45,6 +45,7 @@
     "@fastify/swagger-ui": "^5.2.3",
     "fastify": "^5.5.0",
     "fastify-type-provider-zod": "^6.1.0",
+    "fuzzball": "^2.2.6",
     "mongoose": "^8.17.2",
     "zod": "^4.0.17"
   }
