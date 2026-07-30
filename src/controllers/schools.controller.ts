@@ -66,6 +66,7 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     conditions.push({
       $or: [
         { namaSekolah: regexObj },
+        { namaRingkas: regexObj },
         { kodSekolah: regexObj },
         { 'data.infoKomunikasi.alamatSurat': regexObj },
         { 'data.infoKomunikasi.bandarSurat': regexObj },

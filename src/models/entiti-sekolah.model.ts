@@ -75,6 +75,10 @@ const EntitiSekolahDataSchema = new Schema<EntitiSekolahData>(
 const EntitiSekolahSchema = new Schema<EntitiSekolah>(
   {
     namaSekolah: { type: String, default: null },
+    // Short-name / abbreviation candidates (searchable). Array so a single indexed path covers
+    // all candidates; order is preserved (most-preferred first). Populated by the data pipeline.
+    // `default: undefined` avoids writing empty arrays.
+    namaRingkas: { type: [String], default: undefined },
     kodSekolah: { type: String, required: true, unique: true },
     data: { type: EntitiSekolahDataSchema, required: true },
     status: { type: String, enum: Object.values(SEKOLAH_STATUS), default: null },

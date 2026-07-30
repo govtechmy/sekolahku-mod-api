@@ -5,6 +5,9 @@
       "namaSekolah": [
         { "type": "string" }
       ],
+      "namaRingkas": [
+        { "type": "string" }
+      ],
       "kodSekolah": [
         { "type": "string" },
         { "type": "token" }

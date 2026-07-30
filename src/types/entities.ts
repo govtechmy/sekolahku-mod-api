@@ -93,6 +93,8 @@ export interface EntitiSekolahData {
 export interface EntitiSekolah {
   /** Name of the school */
   namaSekolah?: string | null
+  /** Short name / abbreviation candidates of the school (searchable). Ordered, most-preferred first. */
+  namaRingkas?: string[] | null
   /** Unique school code identifier */
   kodSekolah: string
   /** Nested school data */
