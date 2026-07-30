@@ -11,6 +11,7 @@ export const SCHOOL_SYNONYMS = 'school_synonyms'
 // and /schools/find-nearby stay in sync.
 export const SCHOOL_NAME_SEARCH_PATHS = [
   'namaSekolah',
+  'namaRingkas',
   'data.infoKomunikasi.alamatSurat',
   'data.infoKomunikasi.bandarSurat',
   'data.infoPentadbiran.parlimen',
