@@ -16,7 +16,7 @@ GET {{url}}/schools/search?namaSekolah=kebngsaan
 Sekolahku-X-Api-Key: {{apiKey}}
 
 ### 3) Padanan tepat vs hampir — padanan lebih relevan patut di atas
-GET {{url}}/schools/search?namaSekolah=tunku abdul rahman
+GET {{url}}/schools/search?namaSekolah=beaufort
 Sekolahku-X-Api-Key: {{apiKey}}
 
 ### 4) Multi-field — cari ikut bandar / alamat

@@ -1,4 +1,4 @@
-@url = http://localhost:3000
+@url = http://localhost:3001
 
 ### 
 GET {{url}}/schools/find-nearby?latitude=3.1&longitude=101.5&radiusInMeter=10000
@@ -34,7 +34,7 @@ GET {{url}}/schools/find-nearby?latitude=2.8834&longitude=112.074&radiusInMeter=
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ### 
-GET {{url}}/schools/search?namaSekolah=sarawak&negeri=ALL&jenis=SJK,SMK
+GET {{url}}/schools/search?namaSekolah=beaufort&negeri=ALL&jenis=SJK,SMK
 Sekolahku-X-Api-Key: ABC343423232o3u243udbsjdfbw
 
 ###
