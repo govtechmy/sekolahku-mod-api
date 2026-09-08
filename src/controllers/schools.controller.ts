@@ -2,12 +2,19 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { PipelineStage } from 'mongoose'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { GetFilterSchoolTypeQuery, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
-import { buildAttributeFilters, buildAttributeMatch, buildFuzzyNameMust, geoWithinCircleFilter, SCHOOL_SEARCH_INDEX } from 'src/services/school-search.svc'
+import {
+  buildAttributeFilters,
+  buildAttributeMatch,
+  buildFuzzyNameMust,
+  geoWithinCircleFilter,
+  isExactSchoolMatch,
+  rankFuzzySchools,
+  SCHOOL_SEARCH_INDEX,
+} from 'src/services/school-search.svc'
 import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
-import { ratio, WRatio } from 'fuzzball'
 
 import type { CreateSchoolBody } from '@/schemas'
 
@@ -54,85 +61,6 @@ type SchoolSearchParams = {
 
 type SchoolSearchResult = { items: EntitiSekolah[]; total: number }
 
-function normalizeWords(value: string): string {
-  const decomposed = value.normalize('NFKD')
-  const stripped = decomposed.replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-  const removedDiacritics = stripped.replace(/\p{M}/gu, '')
-  const upperCased = removedDiacritics.toUpperCase().replace(/&/g, ' DAN ')
-  return (upperCased.match(/[A-Z0-9]+/g) ?? []).join(' ')
-}
-
-function normalizeCompact(value: string): string {
-  return normalizeWords(value).replace(/ /g, '')
-}
-
-function hybridFuzzyScore(query: string, value: string): number {
-  const normalizedQuery = normalizeWords(query)
-  const normalizedValue = normalizeWords(value)
-  if (!normalizedValue) {
-    return 0
-  }
-
-  if (normalizeCompact(query) === normalizeCompact(value)) {
-    return 100
-  }
-
-  const queryTokens = normalizedQuery.split(' ').filter(Boolean)
-  const valueTokens = normalizedValue.split(' ').filter(Boolean)
-
-  if (queryTokens.length > 0 && queryTokens.every(token => valueTokens.includes(token))) {
-    return 100
-  }
-
-  if (
-    queryTokens.length > 0 &&
-    queryTokens.every(token => valueTokens.some(valueToken => valueToken.startsWith(token)))
-  ) {
-    return 95
-  }
-
-  const tokenScore =
-    queryTokens.length > 0
-      ? queryTokens.reduce((sum, token) => {
-          const best = Math.max(
-            ...valueTokens.map(valueToken => ratio(token, valueToken, { full_process: false })),
-            0,
-          )
-          return sum + best
-        }, 0) / queryTokens.length
-      : 0
-
-  const compactScore = ratio(normalizeCompact(query), normalizeCompact(value), { full_process: false })
-  const wRatioScore = WRatio(normalizedQuery, normalizedValue, { full_process: false })
-  const tokenCoverage = Math.min(1, queryTokens.length / Math.max(1, valueTokens.length))
-
-  return Math.max(tokenScore, compactScore, wRatioScore) * (0.75 + 0.2 * tokenCoverage)
-}
-
-function scoreSchoolMatch(query: string, school: EntitiSekolah): number {
-  const fields = [
-    { field: 'KODSEKOLAH', value: school.kodSekolah },
-    { field: 'NAMA_SEKOLAH', value: school.namaSekolah },
-    { field: 'ALAMAT_SURAT', value: school.data?.infoKomunikasi?.alamatSurat },
-    { field: 'BANDAR_SURAT', value: school.data?.infoKomunikasi?.bandarSurat },
-    { field: 'PARLIMEN', value: school.data?.infoPentadbiran?.parlimen },
-    { field: 'NEGERI', value: school.data?.infoPentadbiran?.negeri },
-  ]
-
-  let best = 0
-  for (const item of fields) {
-    if (!item.value) continue
-    const score = hybridFuzzyScore(query, String(item.value))
-    if (item.field === 'KODSEKOLAH' && normalizeCompact(query) === normalizeCompact(String(item.value))) {
-      best = Math.max(best, 100)
-    } else {
-      best = Math.max(best, score)
-    }
-  }
-
-  return best
-}
-
 /**
  * Legacy regex-based search. Used when there are no search criteria (plain list)
  * and as a graceful fallback when Atlas Search is unavailable.
@@ -164,7 +92,10 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     const effectiveRadius = radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS
     const geoNearStage = {
       $geoNear: {
-        near: { type: 'Point' as const, coordinates: [longitude, latitude] as [number, number] },
+        near: {
+          type: 'Point' as const,
+          coordinates: [longitude, latitude] as [number, number],
+        },
         distanceField: 'distance',
         maxDistance: effectiveRadius,
         spherical: true,
@@ -176,34 +107,14 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     const countResult = await EntitiSekolahModel.aggregate([geoNearStage, { $count: 'total' }] as unknown as PipelineStage[])
     const total = (countResult[0] as { total?: number } | undefined)?.total ?? 0
 
-    const geoSort = namaSekolah
-      ? { $sort: { distance: 1, namaSekolah: 1 } }
-      : { $sort: { namaSekolah: 1 } }
+    const geoSort = namaSekolah ? { $sort: { distance: 1, namaSekolah: 1 } } : { $sort: { namaSekolah: 1 } }
 
-    let items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
+    const items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
       geoNearStage,
       geoSort,
       { $skip: skip },
       { $limit: limit },
     ] as unknown as PipelineStage[])
-
-    if (namaSekolah) {
-      items = items
-        .map(item => ({ item, score: scoreSchoolMatch(namaSekolah, item), distance: (item as any).distance }))
-        .sort((left, right) => {
-          const scoreDiff = right.score - left.score
-          if (scoreDiff !== 0) {
-            return scoreDiff
-          }
-          const aDist = left.distance ?? 0
-          const bDist = right.distance ?? 0
-          if (aDist !== bDist) {
-            return aDist - bDist
-          }
-          return String(left.item.namaSekolah).localeCompare(String(right.item.namaSekolah))
-        })
-        .map(({ item }) => item)
-    }
 
     return { items, total }
   }
@@ -216,22 +127,78 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   })
 
   const total = await EntitiSekolahModel.countDocuments(query)
-  let items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
-
-  if (namaSekolah) {
-    items = items
-      .map(item => ({ item, score: scoreSchoolMatch(namaSekolah, item) }))
-      .sort((left, right) => {
-        const scoreDiff = right.score - left.score
-        if (scoreDiff !== 0) {
-          return scoreDiff
-        }
-        return String(left.item.namaSekolah).localeCompare(String(right.item.namaSekolah))
-      })
-      .map(({ item }) => item)
-  }
+  const items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
 
   return { items, total }
+}
+
+type SchoolWithDistance = EntitiSekolah & { distance?: number }
+
+const FUZZY_CANDIDATE_PROJECTION = {
+  kodSekolah: 1,
+  namaSekolah: 1,
+  namaRingkas: 1,
+  'data.infoKomunikasi.alamatSurat': 1,
+  'data.infoKomunikasi.bandarSurat': 1,
+  'data.infoPentadbiran.parlimen': 1,
+  'data.infoPentadbiran.negeri': 1,
+} as const
+
+async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSearchResult> {
+  const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, skip, limit } = params
+  if (!namaSekolah) return regexSearchSchools(params)
+
+  const conditions = buildAttributeMatch({ negeri, peringkat, jenis })
+  const query: Record<string, unknown> = conditions.length > 0 ? { $and: conditions } : {}
+  let candidates: SchoolWithDistance[]
+
+  if (latitude !== undefined && longitude !== undefined) {
+    const geoNearStage = {
+      $geoNear: {
+        near: {
+          type: 'Point' as const,
+          coordinates: [longitude, latitude] as [number, number],
+        },
+        distanceField: 'distance',
+        maxDistance: radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS,
+        spherical: true,
+        key: 'data.infoLokasi.location',
+        query,
+      },
+    }
+    candidates = await EntitiSekolahModel.aggregate<SchoolWithDistance>([
+      geoNearStage,
+      { $project: { ...FUZZY_CANDIDATE_PROJECTION, distance: 1 } },
+    ] as unknown as PipelineStage[])
+  } else {
+    Object.assign(query, {
+      'data.infoLokasi.location': { $exists: true },
+      'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
+      'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
+    })
+
+    // ponytail: O(n) scan is bounded to the filtered ~10k-school fallback set;
+    // replace with a cached lightweight index only when fallback traffic warrants it.
+    candidates = (await EntitiSekolahModel.find(query, FUZZY_CANDIDATE_PROJECTION).lean()) as unknown as SchoolWithDistance[]
+  }
+
+  const ranked = rankFuzzySchools(namaSekolah, candidates)
+  const pageResults = ranked.slice(skip, skip + limit)
+  const pageCodes = pageResults.map(result => result.school.kodSekolah)
+  if (pageCodes.length === 0) return { items: [], total: ranked.length }
+
+  const fullItems = (await EntitiSekolahModel.find({
+    kodSekolah: { $in: pageCodes },
+  }).lean()) as unknown as EntitiSekolah[]
+  const itemByCode = new Map(fullItems.map(item => [item.kodSekolah, item]))
+  const items = pageResults.flatMap(result => {
+    const item = itemByCode.get(result.school.kodSekolah)
+    if (!item) return []
+    const distance = (result.school as SchoolWithDistance).distance
+    return distance === undefined ? [item] : [{ ...item, distance } as EntitiSekolah]
+  })
+
+  return { items, total: ranked.length }
 }
 
 // School search suggestion — fuzzy search via MongoDB Atlas Search with regex fallback.
@@ -296,12 +263,25 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
   }
 
   const hasSearchCriteria = must.length > 0 || should.length > 0 || filter.length > 0
+  const completeSparseSearch = async (strongResult: SchoolSearchResult): Promise<SchoolSearchResult> => {
+    if (!hasText || strongResult.total >= numericLimit || strongResult.items.some(item => isExactSchoolMatch(namaSekolah!, item))) {
+      return strongResult
+    }
+    return fuzzySearchSchools(params)
+  }
 
   try {
     // No criteria at all → behave like the existing plain list endpoint
     if (!hasSearchCriteria) {
       const { items, total } = await regexSearchSchools(params)
-      return reply.send(createSuccessResponse({ items, totalRecords: total, pageNumber: page, pageSize }))
+      return reply.send(
+        createSuccessResponse({
+          items,
+          totalRecords: total,
+          pageNumber: page,
+          pageSize,
+        }),
+      )
     }
 
     const compound: Record<string, unknown> = {}
@@ -317,7 +297,9 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
       compound.filter = filter
     }
 
-    const searchStage = { $search: { index: SCHOOL_SEARCH_INDEX, compound } } as unknown as PipelineStage
+    const searchStage = {
+      $search: { index: SCHOOL_SEARCH_INDEX, compound },
+    } as unknown as PipelineStage
 
     const dataPipeline: PipelineStage[] = [searchStage]
     // If there is no text query, order by name for stability even when geo filters exist.
@@ -328,17 +310,41 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
 
     const items = await EntitiSekolahModel.aggregate<EntitiSekolah>(dataPipeline)
 
-    const metaPipeline = [{ $searchMeta: { index: SCHOOL_SEARCH_INDEX, compound, count: { type: 'total' } } }] as unknown as PipelineStage[]
+    const metaPipeline = [
+      {
+        $searchMeta: {
+          index: SCHOOL_SEARCH_INDEX,
+          compound,
+          count: { type: 'total' },
+        },
+      },
+    ] as unknown as PipelineStage[]
     const metaResult = await EntitiSekolahModel.aggregate(metaPipeline)
     const total = (metaResult[0] as { count?: { total?: number } } | undefined)?.count?.total ?? 0
+    const result = await completeSparseSearch({ items, total })
 
-    return reply.send(createSuccessResponse({ items, totalRecords: total, pageNumber: page, pageSize }))
+    return reply.send(
+      createSuccessResponse({
+        items: result.items,
+        totalRecords: result.total,
+        pageNumber: page,
+        pageSize,
+      }),
+    )
   } catch (error) {
     // Req 6.2 & 6.3 — Atlas Search unavailable: log and gracefully fall back to regex search
     req.log.error({ err: error }, 'schools:search-suggestion:atlas-error')
     try {
-      const { items, total } = await regexSearchSchools(params)
-      return reply.send(createSuccessResponse({ items, totalRecords: total, pageNumber: page, pageSize }))
+      const strongResult = await regexSearchSchools(params)
+      const result = await completeSparseSearch(strongResult)
+      return reply.send(
+        createSuccessResponse({
+          items: result.items,
+          totalRecords: result.total,
+          pageNumber: page,
+          pageSize,
+        }),
+      )
     } catch (fallbackError) {
       req.log.error({ err: fallbackError }, 'schools:search-suggestion:error')
       const errResponse = createErrorResponse('Failed to fetch school search suggestions. Please try again later.', 'ERR_500', 500)

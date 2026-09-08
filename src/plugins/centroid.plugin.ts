@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
+import { env } from '../config/env.config'
 import { type CentroidCache, getCentroidCache, loadCentroidCacheFromS3 } from '../services/centroid-cache.svc'
 
 declare module 'fastify' {
@@ -9,7 +10,12 @@ declare module 'fastify' {
 }
 
 export async function registerCentroidPlugin(app: FastifyInstance): Promise<void> {
-  await loadCentroidCacheFromS3()
+  try {
+    await loadCentroidCacheFromS3()
+  } catch (error) {
+    if (env.APP_ENV !== 'local') throw error
+    app.log.warn({ err: error }, 'centroid cache unavailable in local development')
+  }
   const cache = getCentroidCache()
   app.decorate('centroidCache', cache)
 

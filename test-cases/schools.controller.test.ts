@@ -87,7 +87,10 @@ describe('schools controller', () => {
 
   describe('createSchool', () => {
     test('should create a school and return 201', async () => {
-      const mockBody: CreateSchoolBody = { kodSekolah: '001', namaSekolah: 'New School' } as CreateSchoolBody
+      const mockBody: CreateSchoolBody = {
+        kodSekolah: '001',
+        namaSekolah: 'New School',
+      } as CreateSchoolBody
       const mockCreated = { ...mockBody, _id: '123' }
       mockedModel.create.mockResolvedValue(mockCreated)
 
@@ -128,7 +131,9 @@ describe('schools controller', () => {
 
       await getSchoolById(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.findOne).toHaveBeenCalledWith({ kodSekolah: '001' })
+      expect(EntitiSekolahModel.findOne).toHaveBeenCalledWith({
+        kodSekolah: '001',
+      })
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
@@ -151,7 +156,9 @@ describe('schools controller', () => {
 
       await getSchoolById(mockReq, mockReply)
 
-      expect(EntitiSekolahModel.findOne).toHaveBeenCalledWith({ kodSekolah: '001' })
+      expect(EntitiSekolahModel.findOne).toHaveBeenCalledWith({
+        kodSekolah: '001',
+      })
       expect(mockReply.code).toHaveBeenCalledWith(404)
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'ERROR',
@@ -194,7 +201,9 @@ describe('schools controller', () => {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 10000 },
         log: { error: mock(() => ({})) },
         server: { centroidCache: {} },
-      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+      } as unknown as FastifyRequest<{
+        Querystring: GetNearbySchoolByLocation
+      }>
 
       await getFindNearby(mockReq, mockReply)
 
@@ -246,7 +255,9 @@ describe('schools controller', () => {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
         log: { error: mock(() => ({})) },
         server: { centroidCache: {} },
-      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+      } as unknown as FastifyRequest<{
+        Querystring: GetNearbySchoolByLocation
+      }>
 
       await getFindNearby(mockReq, mockReply)
 
@@ -274,7 +285,9 @@ describe('schools controller', () => {
         query: { latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
         log: { error: mock(() => ({})) },
         server: { centroidCache: {} },
-      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+      } as unknown as FastifyRequest<{
+        Querystring: GetNearbySchoolByLocation
+      }>
 
       await getFindNearby(mockReq, mockReply)
 
@@ -321,12 +334,18 @@ describe('schools controller', () => {
         },
         log: { error: mock(() => ({})) },
         server: { centroidCache: {} },
-      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+      } as unknown as FastifyRequest<{
+        Querystring: GetNearbySchoolByLocation
+      }>
 
       await getFindNearby(mockReq, mockReply)
 
       const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
-      const search = (pipeline[0] as { $search: { index: string; compound: Record<string, unknown> } }).$search
+      const search = (
+        pipeline[0] as {
+          $search: { index: string; compound: Record<string, unknown> }
+        }
+      ).$search
       expect(search.index).toBe('sekolah_search')
 
       const mustStr = JSON.stringify(search.compound.must)
@@ -371,7 +390,9 @@ describe('schools controller', () => {
         },
         log: { error: mock(() => ({})) },
         server: { centroidCache: {} },
-      } as unknown as FastifyRequest<{ Querystring: GetNearbySchoolByLocation }>
+      } as unknown as FastifyRequest<{
+        Querystring: GetNearbySchoolByLocation
+      }>
 
       await getFindNearby(mockReq, mockReply)
 
@@ -402,7 +423,7 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { namaSekolah: 'Test' },
+        query: { namaSekolah: 'Test', pageSize: 1 },
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
@@ -416,14 +437,36 @@ describe('schools controller', () => {
           items: mockSchools,
           totalRecords: 1,
           pageNumber: 1,
-          pageSize: 25,
+          pageSize: 1,
         },
       })
     })
 
-    test('should return search results with location', async () => {
-      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockedModel.aggregate.mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce(mockSchools)
+    test('should use application fuzzy fallback when Atlas returns too few results', async () => {
+      const beaufortSchool = {
+        kodSekolah: 'XBA6036',
+        namaSekolah: 'SEKOLAH KEBANGSAAN PEKAN BEAUFORT',
+        namaRingkas: ['SK PEKAN BEAUFORT', 'SKPB'],
+        data: {
+          infoSekolah: {},
+          infoKomunikasi: {
+            alamatSurat: 'BEAUFORT',
+            bandarSurat: 'BEAUFORT',
+          },
+          infoPentadbiran: {
+            parlimen: 'BEAUFORT',
+            negeri: 'SABAH',
+          },
+          infoLokasi: {
+            location: {
+              type: 'Point',
+              coordinates: [115.7, 5.3],
+            },
+          },
+        },
+      }
+      mockedModel.aggregate.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: { total: 0 } }])
+      mockQuery.lean.mockResolvedValueOnce([beaufortSchool]).mockResolvedValueOnce([beaufortSchool])
 
       const mockReply = {
         send: mock(() => ({})),
@@ -431,7 +474,42 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000 },
+        query: { namaSekolah: 'bufot', pageSize: 12 },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.find).toHaveBeenCalledTimes(2)
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          items: [beaufortSchool],
+          totalRecords: 1,
+          pageNumber: 1,
+          pageSize: 12,
+        },
+      })
+    })
+
+    test('should return search results with location', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
+      mockedModel.aggregate.mockResolvedValueOnce(mockSchools).mockResolvedValueOnce([{ count: { total: 1 } }])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: {
+          namaSekolah: 'Test',
+          latitude: 3.1,
+          longitude: 101.5,
+          radiusInMeter: 1000,
+          pageSize: 1,
+        },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
@@ -442,7 +520,7 @@ describe('schools controller', () => {
 
     test('should return search results with location and negeri', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
-      mockedModel.aggregate.mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce(mockSchools)
+      mockedModel.aggregate.mockResolvedValueOnce(mockSchools).mockResolvedValueOnce([{ count: { total: 1 } }])
 
       const mockReply = {
         send: mock(() => ({})),
@@ -450,7 +528,14 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { namaSekolah: 'Test', latitude: 3.1, longitude: 101.5, radiusInMeter: 1000, negeri: 'something' },
+        query: {
+          namaSekolah: 'Test',
+          latitude: 3.1,
+          longitude: 101.5,
+          radiusInMeter: 1000,
+          negeri: 'something',
+          pageSize: 1,
+        },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
@@ -499,14 +584,23 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { namaSekolah: 'skm gombak', negeri: 'SELANGOR', jenis: ['Sekolah Rendah'], peringkat: 'RENDAH' },
+        query: {
+          namaSekolah: 'skm gombak',
+          negeri: 'SELANGOR',
+          jenis: ['Sekolah Rendah'],
+          peringkat: 'RENDAH',
+        },
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
       await getSchoolsSearchSuggestion(mockReq, mockReply)
 
       const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
-      const search = (pipeline[0] as { $search: { index: string; compound: Record<string, unknown> } }).$search
+      const search = (
+        pipeline[0] as {
+          $search: { index: string; compound: Record<string, unknown> }
+        }
+      ).$search
       expect(search.index).toBe('sekolah_search')
 
       const mustStr = JSON.stringify(search.compound.must)
@@ -553,8 +647,14 @@ describe('schools controller', () => {
       const mockSchoolTypes = [
         { jenisLabel: 'Sekolah Rendah', peringkats: ['RENDAH'] },
         { jenisLabel: 'Sekolah Menengah', peringkats: ['MENENGAH'] },
-        { jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Cina)', peringkats: ['RENDAH'] },
-        { jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Tamil)', peringkats: ['RENDAH'] },
+        {
+          jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Cina)',
+          peringkats: ['RENDAH'],
+        },
+        {
+          jenisLabel: 'Sekolah Rendah Jenis Kebangsaan (Tamil)',
+          peringkats: ['RENDAH'],
+        },
       ]
 
       const mockReply = {

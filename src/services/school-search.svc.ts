@@ -1,4 +1,6 @@
+import { ratio } from 'fuzzball'
 import type { PipelineStage } from 'mongoose'
+import type { EntitiSekolah } from 'src/types/entities'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
 
 // Atlas Search index name (see atlas/search-indexes/sekolah_search.json).
@@ -17,6 +19,97 @@ export const SCHOOL_NAME_SEARCH_PATHS = [
   'data.infoPentadbiran.parlimen',
   'data.infoPentadbiran.negeri',
 ] as const
+
+const FUZZY_TOKEN_MIN_SCORE = 68
+
+export type RankedFuzzySchool = {
+  school: EntitiSekolah
+  score: number
+  exact: boolean
+}
+
+type WeightedSearchField = {
+  value: unknown
+  weight: number
+}
+
+function normalizeSearchText(value: unknown): string {
+  return (
+    String(value ?? '')
+      .normalize('NFKD')
+      .replace(/\p{M}/gu, '')
+      .toUpperCase()
+      .replace(/&/g, ' DAN ')
+      .match(/[A-Z0-9]+/g)
+      ?.join(' ') ?? ''
+  )
+}
+
+function normalizeCompact(value: unknown): string {
+  return normalizeSearchText(value).replace(/ /g, '')
+}
+
+function getSearchFields(school: EntitiSekolah): WeightedSearchField[] {
+  return [
+    { value: school.kodSekolah, weight: 1 },
+    { value: school.namaSekolah, weight: 1 },
+    ...(school.namaRingkas ?? []).map(value => ({ value, weight: 1 })),
+    { value: school.data?.infoKomunikasi?.bandarSurat, weight: 0.95 },
+    { value: school.data?.infoPentadbiran?.parlimen, weight: 0.95 },
+    { value: school.data?.infoKomunikasi?.alamatSurat, weight: 0.85 },
+    { value: school.data?.infoPentadbiran?.negeri, weight: 0.8 },
+  ]
+}
+
+function scoreToken(queryToken: string, candidateToken: string): number {
+  if (queryToken === candidateToken) return 100
+  if (candidateToken.startsWith(queryToken)) return 95
+  if (queryToken.length <= 2) return 0
+
+  const fuzzyScore = ratio(queryToken, candidateToken, { full_process: false })
+  return fuzzyScore >= FUZZY_TOKEN_MIN_SCORE ? fuzzyScore : 0
+}
+
+export function isExactSchoolMatch(query: string, school: EntitiSekolah): boolean {
+  const normalizedQuery = normalizeCompact(query)
+  return (
+    normalizedQuery.length > 0 &&
+    (normalizedQuery === normalizeCompact(school.kodSekolah) || normalizedQuery === normalizeCompact(school.namaSekolah))
+  )
+}
+
+/**
+ * Ranks a bounded school candidate set without Atlas Search.
+ * Every query token must match at least one searchable field, which keeps
+ * multi-token queries precise while still tolerating spelling mistakes.
+ */
+export function rankFuzzySchools(query: string, schools: EntitiSekolah[]): RankedFuzzySchool[] {
+  const queryTokens = normalizeSearchText(query).split(' ').filter(Boolean)
+  if (queryTokens.length === 0) return []
+
+  return schools
+    .map(school => {
+      const fields = getSearchFields(school).map(field => ({
+        tokens: normalizeSearchText(field.value).split(' ').filter(Boolean),
+        weight: field.weight,
+      }))
+      const tokenScores = queryTokens.map(queryToken =>
+        Math.max(...fields.flatMap(field => field.tokens.map(candidateToken => scoreToken(queryToken, candidateToken) * field.weight)), 0),
+      )
+
+      if (tokenScores.some(score => score < FUZZY_TOKEN_MIN_SCORE)) return null
+
+      const exact = isExactSchoolMatch(query, school)
+      const averageScore = tokenScores.reduce((sum, score) => sum + score, 0) / tokenScores.length
+      return { school, score: exact ? 1_000 : averageScore, exact }
+    })
+    .filter((result): result is RankedFuzzySchool => result !== null)
+    .sort((left, right) => {
+      const scoreDifference = right.score - left.score
+      if (scoreDifference !== 0) return scoreDifference
+      return String(left.school.namaSekolah).localeCompare(String(right.school.namaSekolah))
+    })
+}
 
 /**
  * Fuzzy + synonym + code clauses for a school name query, combined with OR semantics.
@@ -57,7 +150,9 @@ export function buildFuzzyNameShould(name: string): Record<string, unknown>[] {
  * required, and cannot be satisfied by a geo/proximity clause alone).
  */
 export function buildFuzzyNameMust(name: string): Record<string, unknown> {
-  return { compound: { should: buildFuzzyNameShould(name), minimumShouldMatch: 1 } }
+  return {
+    compound: { should: buildFuzzyNameShould(name), minimumShouldMatch: 1 },
+  }
 }
 
 /** Atlas Search `geoWithin` circle filter (hard radius limit, meters). */
@@ -83,11 +178,15 @@ export function locationExistsFilter(): Record<string, unknown> {
  * `filters` are placed in the compound `filter` clause (e.g. geo radius, location existence).
  */
 export function buildNameSearchStage(name: string, filters: Record<string, unknown>[] = []): PipelineStage {
-  const compound: Record<string, unknown> = { must: [buildFuzzyNameMust(name)] }
+  const compound: Record<string, unknown> = {
+    must: [buildFuzzyNameMust(name)],
+  }
   if (filters.length > 0) {
     compound.filter = filters
   }
-  return { $search: { index: SCHOOL_SEARCH_INDEX, compound } } as unknown as PipelineStage
+  return {
+    $search: { index: SCHOOL_SEARCH_INDEX, compound },
+  } as unknown as PipelineStage
 }
 
 /**
@@ -118,20 +217,26 @@ export function buildAttributeFilters({ negeri, peringkat, jenis }: SchoolAttrib
   const filters: Record<string, unknown>[] = []
 
   if (negeri && negeri !== 'ALL') {
-    filters.push({ equals: { path: 'data.infoPentadbiran.negeri', value: negeri } })
+    filters.push({
+      equals: { path: 'data.infoPentadbiran.negeri', value: negeri },
+    })
   }
 
   if (jenis && jenis.length > 0 && !jenis.includes('ALL')) {
     filters.push({
       compound: {
-        should: jenis.map(j => ({ equals: { path: 'data.infoSekolah.jenisLabel', value: j } })),
+        should: jenis.map(j => ({
+          equals: { path: 'data.infoSekolah.jenisLabel', value: j },
+        })),
         minimumShouldMatch: 1,
       },
     })
   }
 
   if (peringkat && peringkat !== 'ALL') {
-    filters.push({ equals: { path: 'data.infoPentadbiran.peringkat', value: peringkat } })
+    filters.push({
+      equals: { path: 'data.infoPentadbiran.peringkat', value: peringkat },
+    })
   }
 
   return filters
@@ -150,7 +255,9 @@ export function buildAttributeMatch({ negeri, peringkat, jenis }: SchoolAttribut
   }
 
   if (jenis && jenis.length > 0 && !jenis.includes('ALL')) {
-    conditions.push({ $or: jenis.map(j => ({ 'data.infoSekolah.jenisLabel': j })) })
+    conditions.push({
+      $or: jenis.map(j => ({ 'data.infoSekolah.jenisLabel': j })),
+    })
   }
 
   if (peringkat && peringkat !== 'ALL') {
