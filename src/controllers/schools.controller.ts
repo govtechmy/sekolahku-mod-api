@@ -2,15 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { PipelineStage } from 'mongoose'
 import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { GetFilterSchoolTypeQuery, ListSchoolsSearchQuery } from 'src/schemas/schools/request.schema'
-import {
-  buildAttributeFilters,
-  buildAttributeMatch,
-  buildFuzzyNameMust,
-  geoWithinCircleFilter,
-  isExactSchoolMatch,
-  rankFuzzySchools,
-  SCHOOL_SEARCH_INDEX,
-} from 'src/services/school-search.svc'
+import { buildAttributeMatch, FUZZY_CANDIDATE_PROJECTION, rankFuzzySchools } from 'src/services/school-search.svc'
 import type { EntitiSekolah } from 'src/types/entities'
 import { PERINGKAT } from 'src/types/enum'
 import { escapeStringRegex } from 'src/utils/escape-string-regex'
@@ -44,8 +36,6 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // Default geo radius (meters) when latitude/longitude are provided without radiusInMeter.
 // Client requirement: show schools within 8km of the user's location by default.
 const DEFAULT_GEO_RADIUS_METERS = 8_000
-// Proximity decay pivot (meters): distance at which the `near` proximity score halves.
-const GEO_PROXIMITY_PIVOT_METERS = 2_000
 
 type SchoolSearchParams = {
   namaSekolah?: string
@@ -134,16 +124,6 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
 
 type SchoolWithDistance = EntitiSekolah & { distance?: number }
 
-const FUZZY_CANDIDATE_PROJECTION = {
-  kodSekolah: 1,
-  namaSekolah: 1,
-  namaRingkas: 1,
-  'data.infoKomunikasi.alamatSurat': 1,
-  'data.infoKomunikasi.bandarSurat': 1,
-  'data.infoPentadbiran.parlimen': 1,
-  'data.infoPentadbiran.negeri': 1,
-} as const
-
 async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSearchResult> {
   const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, skip, limit } = params
   if (!namaSekolah) return regexSearchSchools(params)
@@ -201,7 +181,7 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   return { items, total: ranked.length }
 }
 
-// School search suggestion — fuzzy search via MongoDB Atlas Search with regex fallback.
+// School search suggestion — typo-tolerant fuzzy ranking (fuzzball) with regex fallback.
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
   const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter } = req.query
   const numericPage = Number(page) || 1
@@ -220,127 +200,31 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     limit: numericLimit,
   }
 
-  // Build Atlas Search compound query
-  const must: Record<string, unknown>[] = []
-  const should: Record<string, unknown>[] = []
-  const filter: Record<string, unknown>[] = []
-
-  const hasGeo = latitude !== undefined && longitude !== undefined
-
-  // Req 1, 2, 8, 9 — text match. Fuzzy (typo) OR synonyms (abbreviations) OR code, combined
-  // with OR semantics in a nested compound and placed in `must` so a text query is mandatory.
-  // (If these were in `should`, the proximity `near` clause could satisfy minimumShouldMatch
-  // on its own and return non-matching schools.)
-  if (namaSekolah) {
-    // Fuzzy (typo) OR synonyms (abbreviations) OR code, shared with /schools/find-nearby via
-    // school-search.svc.ts. Placed in `must` so a text query is mandatory (a geo/proximity
-    // clause alone must not satisfy the match).
-    must.push(buildFuzzyNameMust(namaSekolah))
-  }
-
-  // Req 3 — filters (negeri / jenis / peringkat). Shared with /schools/find-nearby via
-  // school-search.svc.ts so the sidebar list and the map markers filter identically.
-  filter.push(...buildAttributeFilters({ negeri, peringkat, jenis }))
-
-  const hasText = typeof namaSekolah === 'string' && namaSekolah.trim().length > 0
-
-  // Req 4 — geo. Two parts:
-  //  1) filter (hard limit): only schools within the radius (default 8km) are returned.
-  //  2) should `near` (soft rank): closer schools score higher, so the nearest appear first.
-  //     Only apply proximity scoring when a text query exists.
-  if (hasGeo) {
-    const radius = radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS
-    filter.push(geoWithinCircleFilter(longitude!, latitude!, radius))
-    if (hasText) {
-      should.push({
-        near: {
-          origin: { type: 'Point', coordinates: [longitude, latitude] },
-          pivot: GEO_PROXIMITY_PIVOT_METERS,
-          path: 'data.infoLokasi.location',
-        },
-      })
-    }
-  }
-
-  const hasSearchCriteria = must.length > 0 || should.length > 0 || filter.length > 0
-  const completeSparseSearch = async (strongResult: SchoolSearchResult): Promise<SchoolSearchResult> => {
-    if (!hasText || strongResult.total >= numericLimit || strongResult.items.some(item => isExactSchoolMatch(namaSekolah!, item))) {
-      return strongResult
-    }
-    return fuzzySearchSchools(params)
-  }
-
   try {
-    // No criteria at all → behave like the existing plain list endpoint
-    if (!hasSearchCriteria) {
-      const { items, total } = await regexSearchSchools(params)
-      return reply.send(
-        createSuccessResponse({
-          items,
-          totalRecords: total,
-          pageNumber: page,
-          pageSize,
-        }),
-      )
-    }
-
-    const compound: Record<string, unknown> = {}
-    if (must.length > 0) {
-      compound.must = must
-    }
-    // `should` holds only the proximity `near` clause (scoring boost), so no minimumShouldMatch —
-    // matching is enforced by `must` (text) and `filter` (geo radius + attribute filters).
-    if (should.length > 0) {
-      compound.should = should
-    }
-    if (filter.length > 0) {
-      compound.filter = filter
-    }
-
-    const searchStage = {
-      $search: { index: SCHOOL_SEARCH_INDEX, compound },
-    } as unknown as PipelineStage
-
-    const dataPipeline: PipelineStage[] = [searchStage]
-    // If there is no text query, order by name for stability even when geo filters exist.
-    if (!hasText) {
-      dataPipeline.push({ $sort: { namaSekolah: 1 } })
-    }
-    dataPipeline.push({ $skip: skip }, { $limit: numericLimit })
-
-    const items = await EntitiSekolahModel.aggregate<EntitiSekolah>(dataPipeline)
-
-    const metaPipeline = [
-      {
-        $searchMeta: {
-          index: SCHOOL_SEARCH_INDEX,
-          compound,
-          count: { type: 'total' },
-        },
-      },
-    ] as unknown as PipelineStage[]
-    const metaResult = await EntitiSekolahModel.aggregate(metaPipeline)
-    const total = (metaResult[0] as { count?: { total?: number } } | undefined)?.count?.total ?? 0
-    const result = await completeSparseSearch({ items, total })
-
+    // Primary path: in-memory fuzzball ranker over the full school set. It tolerates spelling
+    // mistakes ("bufot" -> "Beaufort") and requires EVERY query token to match a field — which
+    // Atlas Search `fuzzy` (capped at maxEdits: 2) could not do, and which its synonym clause
+    // broke (e.g. "smk gombak" matched every SMK, ignoring "gombak"). fuzzySearchSchools also
+    // handles the dropdown filters, geo radius, and — when there is no name query — delegates to
+    // regexSearchSchools for the plain paginated list.
+    const { items, total } = await fuzzySearchSchools(params)
     return reply.send(
       createSuccessResponse({
-        items: result.items,
-        totalRecords: result.total,
+        items,
+        totalRecords: total,
         pageNumber: page,
         pageSize,
       }),
     )
   } catch (error) {
-    // Req 6.2 & 6.3 — Atlas Search unavailable: log and gracefully fall back to regex search
-    req.log.error({ err: error }, 'schools:search-suggestion:atlas-error')
+    // Graceful degradation: fall back to the legacy regex search if fuzzy ranking fails.
+    req.log.error({ err: error }, 'schools:search-suggestion:error')
     try {
-      const strongResult = await regexSearchSchools(params)
-      const result = await completeSparseSearch(strongResult)
+      const { items, total } = await regexSearchSchools(params)
       return reply.send(
         createSuccessResponse({
-          items: result.items,
-          totalRecords: result.total,
+          items,
+          totalRecords: total,
           pageNumber: page,
           pageSize,
         }),

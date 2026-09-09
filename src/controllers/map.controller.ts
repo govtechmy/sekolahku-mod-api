@@ -10,12 +10,9 @@ import { type CentroidCache } from 'src/services/centroid-cache.svc'
 import { calculateLocationCenter, getRadiusFromZoom, getZoomFromRadius, resolveGroupCoordinates } from 'src/services/geometry.svc'
 import { groupingFromZoom, makeSchoolObject } from 'src/services/nearby.helper'
 import {
-  buildAttributeFilters,
   buildAttributeMatch,
-  buildNameSearchStage,
-  geoWithinCircleFilter,
-  locationExistsFilter,
-  regexNameOr,
+  FUZZY_CANDIDATE_PROJECTION,
+  rankFuzzySchools,
   type SchoolAttributeFilters,
 } from 'src/services/school-search.svc'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
@@ -25,42 +22,32 @@ const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
 /**
  * Runs an aggregation that optionally filters schools by name and by the negeri/peringkat/jenis
  * dropdown filters.
- *  - When `name` is provided it uses fuzzy Atlas Search (typo tolerant + synonyms + code boost)
- *    as the leading `$search` stage, and gracefully falls back to a regex `$match` if Atlas
- *    Search is unavailable (mirrors the /schools/search behaviour).
+ *  - When `name` is provided it ranks candidates with the in-memory fuzzball ranker (typo tolerant,
+ *    every query token must match) — consistent with /schools/search — then aggregates over the
+ *    matched school codes so the downstream `$group` / `$sort` stages are unchanged.
  *  - When `name` is absent it runs the plain `$match` pipeline (unchanged legacy behaviour).
- * `atlasFilters` are placed in the `$search` compound `filter` (geo radius / location exists +
- * attribute `equals`), while `matchConditions` are the equivalent Mongo conditions ANDed together
- * for the non-name and regex-fallback paths. `downstream` are the stages that follow the leading
- * stage (e.g. `$group` / `$sort`).
+ * `matchConditions` are the base Mongo conditions (geo radius / location exists + attribute
+ * `equals`) ANDed together; `downstream` are the stages that follow the leading `$match`.
  */
 async function aggregateSchoolsByName<T>(opts: {
   name?: string
-  atlasFilters: Record<string, unknown>[]
   matchConditions: Record<string, unknown>[]
   downstream: PipelineStage[]
   log?: FastifyBaseLogger
 }): Promise<T[]> {
-  const { name, atlasFilters, matchConditions, downstream, log } = opts
-
-  // Combine all conditions under `$and` so multiple `$or` clauses (e.g. jenis + name regex)
-  // don't overwrite each other in a single object.
-  const buildMatch = (extra: Record<string, unknown>[] = []): Record<string, unknown> => {
-    const all = [...extra, ...matchConditions]
-    return all.length > 0 ? { $and: all } : {}
-  }
+  const { name, matchConditions, downstream } = opts
+  const match = matchConditions.length > 0 ? { $and: matchConditions } : {}
 
   if (!name) {
-    return EntitiSekolahModel.aggregate<T>([{ $match: buildMatch() } as PipelineStage, ...downstream])
+    return EntitiSekolahModel.aggregate<T>([{ $match: match } as PipelineStage, ...downstream])
   }
 
-  try {
-    return await EntitiSekolahModel.aggregate<T>([buildNameSearchStage(name, atlasFilters), ...downstream])
-  } catch (error) {
-    // Atlas Search unavailable → graceful regex fallback within the same base + attribute conditions.
-    log?.error({ err: error }, 'find-nearby:atlas-search:fallback-to-regex')
-    return EntitiSekolahModel.aggregate<T>([{ $match: buildMatch([regexNameOr(name)]) } as PipelineStage, ...downstream])
-  }
+  // Fetch the geo/attribute-constrained candidate set, rank in memory (typo tolerant), then
+  // aggregate over the matched codes so the map and the /schools/search sidebar agree.
+  const candidates = (await EntitiSekolahModel.find(match, FUZZY_CANDIDATE_PROJECTION).lean()) as unknown as EntitiSekolah[]
+  const codes = rankFuzzySchools(name, candidates).map(result => result.school.kodSekolah)
+  if (codes.length === 0) return []
+  return EntitiSekolahModel.aggregate<T>([{ $match: { kodSekolah: { $in: codes } } } as PipelineStage, ...downstream])
 }
 
 // the function is to list all schools within the radius
@@ -159,7 +146,6 @@ async function groupByWestEastMalaysia(params: {
 
   const westEastTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
     name: params.name,
-    atlasFilters: [locationExistsFilter(), ...buildAttributeFilters(attributes)],
     matchConditions: [existsConditions, ...buildAttributeMatch(attributes)],
     downstream: [
       { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
@@ -226,12 +212,8 @@ async function groupByNegeri(params: {
 
   const negeriTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
     name: params.name,
-    atlasFilters: [locationExistsFilter(), ...buildAttributeFilters(attributes)],
     matchConditions: [existsConditions, ...buildAttributeMatch(attributes)],
-    downstream: [
-      { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
-      { $sort: { _id: 1 as const } },
-    ],
+    downstream: [{ $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } }, { $sort: { _id: 1 as const } }],
     log: params.log,
   })
   const negeriKeys = Array.from(negeriTotals).map(item => item._id)
@@ -280,12 +262,8 @@ async function groupByParlimen(params: {
 
   const parlimenTotals = await aggregateSchoolsByName<{ _id: string; total: number }>({
     name: params.name,
-    atlasFilters: [geoWithinCircleFilter(params.longitude, params.latitude, params.effectiveRadius), ...buildAttributeFilters(attributes)],
     matchConditions: [geoCondition, ...buildAttributeMatch(attributes)],
-    downstream: [
-      { $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } },
-      { $sort: { _id: 1 as const } },
-    ],
+    downstream: [{ $group: { _id: '$data.infoPentadbiran.parlimen', total: { $sum: 1 } } }, { $sort: { _id: 1 as const } }],
     log: params.log,
   })
 
@@ -340,7 +318,6 @@ async function searchByName(params: {
   // filters, with regex fallback.
   const foundSchools = await aggregateSchoolsByName<EntitiSekolah>({
     name: params.name,
-    atlasFilters: [geoWithinCircleFilter(params.longitude, params.latitude, params.effectiveRadius), ...buildAttributeFilters(attributes)],
     matchConditions: [geoCondition, ...buildAttributeMatch(attributes)],
     downstream: [{ $sort: { namaSekolah: 1 as const } }],
     log: params.log,
