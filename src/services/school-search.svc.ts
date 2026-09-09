@@ -61,6 +61,18 @@ function getSearchFields(school: EntitiSekolah): WeightedSearchField[] {
   ]
 }
 
+// Minimal fields {@link rankFuzzySchools} reads (see getSearchFields). Fetch a lightweight
+// candidate set with this projection before ranking in memory. Keep in sync with getSearchFields.
+export const FUZZY_CANDIDATE_PROJECTION = {
+  kodSekolah: 1,
+  namaSekolah: 1,
+  namaRingkas: 1,
+  'data.infoKomunikasi.alamatSurat': 1,
+  'data.infoKomunikasi.bandarSurat': 1,
+  'data.infoPentadbiran.parlimen': 1,
+  'data.infoPentadbiran.negeri': 1,
+} as const
+
 function scoreToken(queryToken: string, candidateToken: string): number {
   if (queryToken === candidateToken) return 100
   if (candidateToken.startsWith(queryToken)) return 95
