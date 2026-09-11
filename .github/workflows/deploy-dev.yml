@@ -116,3 +116,22 @@ jobs:
             --force-new-deployment \
             --query 'service.serviceArn' \
             --output text
+
+      - name: Verify ECS deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
+            --services ${{ secrets.ECS_SERVICE_DEV }}
+
+          DEPLOYED_TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ secrets.ECS_CLUSTER_DEV }} \
+            --services ${{ secrets.ECS_SERVICE_DEV }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          EXPECTED_TASK_DEF="${{ steps.register-task-def.outputs.task-definition-arn }}"
+
+          if [ "$DEPLOYED_TASK_DEF" != "$EXPECTED_TASK_DEF" ]; then
+            echo "Expected $EXPECTED_TASK_DEF but ECS is using $DEPLOYED_TASK_DEF"
+            exit 1
+          fi
