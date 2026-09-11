@@ -13,7 +13,7 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
   // School count per state, highest first. Prefer the precomputed breakdown on
   // the analitik doc (kept consistent with jumlahSekolah); only live-count the
   // Sekolah collection as a fallback for docs generated before this field.
-  let taburanNegeri = result.data.taburanNegeri ?? []
+  let taburanNegeri = result.data?.taburanNegeri ?? []
   if (taburanNegeri.length === 0) {
     const taburanNegeriRaw = await SekolahModel.aggregate<{ _id: string; total: number }>([
       { $match: { negeri: { $ne: null } } },
