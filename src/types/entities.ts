@@ -131,11 +131,21 @@ export interface AnalitikItem {
   peringkatBreakdown?: PeringkatBreakdown[]
 }
 
+export interface NegeriTotal {
+  /** State name */
+  negeri: string
+  /** School count in this state */
+  total: number
+}
+
 export interface AnalitikSekolahData {
   /** Analytics by school type/label */
   jenisLabel: AnalitikItem[]
   /** Analytics by assistance type */
   bantuan: AnalitikItem[]
+  /** School count per state, sorted desc. Precomputed so it stays consistent
+   *  with jumlahSekolah instead of live-counting a possibly-stale collection. */
+  taburanNegeri?: NegeriTotal[]
 }
 
 export interface AnalitikSekolah {
