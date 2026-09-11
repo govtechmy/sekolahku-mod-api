@@ -1,4 +1,4 @@
-import type { AnalitikItem, AnalitikSekolah, AnalitikSekolahData, PeringkatBreakdown } from '@types'
+import type { AnalitikItem, AnalitikSekolah, AnalitikSekolahData, NegeriTotal, PeringkatBreakdown } from '@types'
 import { Schema } from 'mongoose'
 
 import { sekolahkuConnection } from '../config/db.config'
@@ -21,10 +21,19 @@ const AnalitikItemSchema = new Schema<AnalitikItem>(
   { _id: false },
 )
 
+const NegeriTotalSchema = new Schema<NegeriTotal>(
+  {
+    negeri: { type: String, required: true },
+    total: { type: Number, required: true },
+  },
+  { _id: false },
+)
+
 const AnalitikSekolahDataSchema = new Schema<AnalitikSekolahData>(
   {
     jenisLabel: { type: [AnalitikItemSchema], required: true },
     bantuan: { type: [AnalitikItemSchema], required: true },
+    taburanNegeri: { type: [NegeriTotalSchema] },
   },
   { _id: false },
 )
