@@ -82,9 +82,18 @@ describe('rankFuzzySchools', () => {
 })
 
 describe('isExactSchoolMatch', () => {
-  test('matches full school name and school code only', () => {
+  test('matches full school name and school code', () => {
     expect(isExactSchoolMatch('xba6036', candidates[0]!)).toBeTrue()
     expect(isExactSchoolMatch('sekolah kebangsaan pekan beaufort', candidates[0]!)).toBeTrue()
     expect(isExactSchoolMatch('beaufort', candidates[0]!)).toBeFalse()
+  })
+
+  test('matches namaRingkas aliases (acronyms) via compact form', () => {
+    // Compact hit on a short-name alias should count as exact (e.g. "skpb", "smkb").
+    expect(isExactSchoolMatch('skpb', candidates[0]!)).toBeTrue()
+    expect(isExactSchoolMatch('sk pekan beaufort', candidates[0]!)).toBeTrue()
+    expect(isExactSchoolMatch('smkb', candidates[1]!)).toBeTrue()
+    // A non-alias substring must still not count as exact.
+    expect(isExactSchoolMatch('smk', candidates[1]!)).toBeFalse()
   })
 })
