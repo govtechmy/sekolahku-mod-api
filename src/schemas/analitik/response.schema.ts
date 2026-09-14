@@ -58,6 +58,15 @@ export const AnalitikResponseSchema = z.object({
           .optional(),
       }),
     ),
+    // School count grouped by state, sorted desc. Prefers the precomputed
+    // data.taburanNegeri on the analitik doc; falls back to a live count over
+    // the Sekolah collection for docs generated before that field existed.
+    taburanNegeri: z.array(
+      z.object({
+        negeri: z.string(),
+        total: z.number(),
+      }),
+    ),
   }),
   lastUpdatedAt: z.union([z.string(), z.date()]),
   fileVersion: z.string().nullable(),

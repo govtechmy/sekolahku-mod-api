@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
+import { AnalitikSekolahModel, DatasetStatusModel, SekolahModel } from 'src/models'
 import type { FilterSchoolTypeWithPeringkatQuery } from 'src/schemas/analitik/response.schema'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -10,9 +10,26 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
     return res.status(404).send(errResponse)
   }
 
+  // School count per state, highest first. Prefer the precomputed breakdown on
+  // the analitik doc (kept consistent with jumlahSekolah); only live-count the
+  // Sekolah collection as a fallback for docs generated before this field.
+  let taburanNegeri = result.data?.taburanNegeri ?? []
+  if (taburanNegeri.length === 0) {
+    const taburanNegeriRaw = await SekolahModel.aggregate<{ _id: string; total: number }>([
+      { $match: { negeri: { $ne: null } } },
+      { $group: { _id: '$negeri', total: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ])
+    taburanNegeri = taburanNegeriRaw.map(({ _id, total }) => ({ negeri: _id, total }))
+  }
+
   const dataset = await DatasetStatusModel.findOne().lean()
   const data = {
     ...result,
+    data: {
+      ...result.data,
+      taburanNegeri,
+    },
     lastUpdatedAt: dataset?.lastUpdatedAt ?? new Date(),
     fileVersion: dataset?.fileVersion ?? null,
   }

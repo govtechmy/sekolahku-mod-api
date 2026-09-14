@@ -20,7 +20,14 @@ describe('analitik controller', () => {
 
   describe('getAnalitikData', () => {
     test('should return analitik data', async () => {
-      const mockAnalitikData = { jumlahSekolah: 100, jumlahGuru: 500, jumlahPelajar: 2000, lastUpdatedAt: new Date() }
+      const taburanNegeri = [{ negeri: 'SELANGOR', total: 10 }]
+      const mockAnalitikData = {
+        jumlahSekolah: 100,
+        jumlahGuru: 500,
+        jumlahPelajar: 2000,
+        data: { jenisLabel: [], bantuan: [], taburanNegeri },
+        lastUpdatedAt: new Date(),
+      }
       mockQueryOne.lean.mockResolvedValue(mockAnalitikData)
 
       const mockReply = {
@@ -34,10 +41,15 @@ describe('analitik controller', () => {
 
       expect(AnalitikSekolahModel.findOne).toHaveBeenCalled()
       expect(DatasetStatusModel.findOne).toHaveBeenCalled()
+      // Uses the precomputed data.taburanNegeri (no live Sekolah aggregation).
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
-        data: { ...mockAnalitikData, fileVersion: null },
+        data: {
+          ...mockAnalitikData,
+          data: { ...mockAnalitikData.data, taburanNegeri },
+          fileVersion: null,
+        },
       })
     })
 
