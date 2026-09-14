@@ -84,10 +84,14 @@ function scoreToken(queryToken: string, candidateToken: string): number {
 
 export function isExactSchoolMatch(query: string, school: EntitiSekolah): boolean {
   const normalizedQuery = normalizeCompact(query)
-  return (
-    normalizedQuery.length > 0 &&
-    (normalizedQuery === normalizeCompact(school.kodSekolah) || normalizedQuery === normalizeCompact(school.namaSekolah))
-  )
+  if (normalizedQuery.length === 0) return false
+  if (normalizedQuery === normalizeCompact(school.kodSekolah) || normalizedQuery === normalizeCompact(school.namaSekolah)) {
+    return true
+  }
+  // Short-name aliases (e.g. "SKPP11") are the local analog of crowd-sourced
+  // abbreviations: an exact compact hit on one should rank as an exact match so
+  // acronym queries pinpoint the right school instead of losing to a fuzzy rival.
+  return (school.namaRingkas ?? []).some(alias => normalizeCompact(alias) === normalizedQuery)
 }
 
 /**
@@ -119,7 +123,10 @@ export function rankFuzzySchools(query: string, schools: EntitiSekolah[]): Ranke
     .sort((left, right) => {
       const scoreDifference = right.score - left.score
       if (scoreDifference !== 0) return scoreDifference
-      return String(left.school.namaSekolah).localeCompare(String(right.school.namaSekolah))
+      // Tiebreak on the normalized name so inconsistent spacing/punctuation in the
+      // data (e.g. "PRESINT 11 (3)" vs "PRESINT 11(1)") doesn't reorder equal-score
+      // matches — otherwise a leading space sorts "11 (3)" above "11(1)".
+      return normalizeSearchText(left.school.namaSekolah).localeCompare(normalizeSearchText(right.school.namaSekolah))
     })
 }
 
