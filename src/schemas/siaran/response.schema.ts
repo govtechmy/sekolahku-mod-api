@@ -57,6 +57,10 @@ export const SiaranListItemSchema = z.object({
 
   imageHero: z.unknown().optional(),
   categoryInfo: z.unknown().optional(),
+
+  source: z.enum(['internal', 'moe']).optional(),
+  sourceUrl: z.string().optional(),
+  images: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
 })
 
 export type SiaranListItem = z.infer<typeof SiaranListItemSchema>

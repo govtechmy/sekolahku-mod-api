@@ -5,6 +5,13 @@ import type { GetSiaranByIdParams, ListSiaransQuery } from 'src/schemas/siaran'
 import type { ArticleCategory, SiaranListItem } from 'src/schemas/siaran/response.schema'
 import { AttachmentService } from 'src/services/attachment.svc'
 import { ImageService } from 'src/services/image.svc'
+import {
+  buildLexicalContentFromPlainText,
+  countMoeNews,
+  getMoeNewsById,
+  getMoeNewsPage,
+  refreshMoeNewsIfStale,
+} from 'src/services/moeNews.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -40,12 +47,25 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     query.articleDate = dateQuery
   }
 
+  // MOE news is synced locally (see moeNews.svc), so search/date filters can
+  // run against it same as Siaran. Category is Siaran-only taxonomy though,
+  // so a category filter can never match a MOE article - exclude MOE then.
+  const moeQuery: Record<string, unknown> = {}
+  if (search?.trim()) {
+    moeQuery.title = query.title
+  }
+  if (Object.keys(dateQuery).length > 0) {
+    moeQuery.datePosted = dateQuery
+  }
+
+  const hasCategoryFilter = Boolean(category && category.length > 3)
+  const includeMoe = !hasCategoryFilter && sortBy === 'articleDate'
+
   const skip = (page - 1) * pageSize
-  const queryResult = await SiaranModel.find(query)
-    .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-    .skip(skip)
-    .limit(pageSize)
-    .lean()
+  const sortedSiaranQuery = SiaranModel.find(query).sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+  const queryResult = includeMoe
+    ? await sortedSiaranQuery.limit(skip + pageSize).lean()
+    : await sortedSiaranQuery.skip(skip).limit(pageSize).lean()
 
   const siaranList: SiaranListItem[] = []
   queryResult.forEach(siaran => {
@@ -89,7 +109,7 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   const imageSvc = new ImageService()
   const attachmentSvc = new AttachmentService()
 
-  const total = await SiaranModel.countDocuments(query)
+  let total = await SiaranModel.countDocuments(query)
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
   const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.file) || []).filter(img => img) as string[]
 
@@ -122,8 +142,33 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
     })
   }
 
+  let items: SiaranListItem[] = siaranList
+
+  if (includeMoe) {
+    await refreshMoeNewsIfStale().catch(err => req.log.error({ err }, 'moe-news:sync-failed'))
+
+    const moeDocs = await getMoeNewsPage(0, skip + pageSize, moeQuery)
+    const moeItems: SiaranListItem[] = moeDocs.map(doc => ({
+      _id: doc._id.toString(),
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      title: doc.title,
+      articleDate: doc.datePosted,
+      content: buildLexicalContentFromPlainText(doc.description),
+      source: 'moe',
+      sourceUrl: doc.sourceUrl,
+      imageHero: doc.images?.[0],
+    }))
+
+    items = [...siaranList, ...moeItems]
+      .sort((a, b) => new Date(b.articleDate ?? 0).getTime() - new Date(a.articleDate ?? 0).getTime())
+      .slice(skip, skip + pageSize)
+
+    total += await countMoeNews(moeQuery)
+  }
+
   const response = createSuccessResponse({
-    items: siaranList,
+    items,
     totalRecords: total,
     pageNumber: page,
     pageSize: pageSize,
@@ -146,8 +191,27 @@ export async function getSiaranById(req: FastifyRequest<{ Params: GetSiaranByIdP
   const siaran = await SiaranModel.findById(id).lean()
 
   if (!siaran) {
-    req.log.warn({ id }, 'siaran:get:not-found')
-    return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+    const moeArticle = await getMoeNewsById(id)
+
+    if (!moeArticle) {
+      req.log.warn({ id }, 'siaran:get:not-found')
+      return rep.code(404).send(createErrorResponse('Siaran not found', 'ERR_404', 404))
+    }
+
+    const moeItem: SiaranListItem = {
+      _id: moeArticle._id.toString(),
+      createdAt: moeArticle.createdAt,
+      updatedAt: moeArticle.updatedAt,
+      title: moeArticle.title,
+      articleDate: moeArticle.datePosted,
+      content: buildLexicalContentFromPlainText(moeArticle.description),
+      source: 'moe',
+      sourceUrl: moeArticle.sourceUrl,
+      imageHero: moeArticle.images?.[0],
+      images: moeArticle.images,
+    }
+
+    return rep.send(createSuccessResponse(moeItem))
   }
 
   const imageSvc = new ImageService()
