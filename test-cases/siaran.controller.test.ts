@@ -8,6 +8,14 @@ import { getSiaranById, getSiaranList } from '../src/controllers/siaran.controll
 import type { GetSiaranByIdParams, ListSiaransQuery } from '../src/schemas/siaran'
 import { mockedModel, mockQuery, mockQueryOne } from './mock-type'
 
+const mockedMoeNewsSvc = {
+  refreshMoeNewsIfStale: mock(() => Promise.resolve()),
+  getMoeNewsPage: mock((): Promise<Record<string, unknown>[]> => Promise.resolve([])),
+  getMoeNewsById: mock((): Promise<Record<string, unknown> | null> => Promise.resolve(null)),
+  countMoeNews: mock(() => Promise.resolve(0)),
+  buildLexicalContentFromPlainText: mock((text: string) => ({ __mockLexicalFrom: text })),
+}
+
 describe('siaran controller', () => {
   beforeEach(() => {
     // Mock DB connection to prevent actual DB calls
@@ -24,6 +32,17 @@ describe('siaran controller', () => {
         searchCategory: mock(() => Promise.resolve([{ value: 'news' }])),
       })),
     }))
+
+    mock.module('src/services/moeNews.svc', () => mockedMoeNewsSvc)
+    mockedMoeNewsSvc.refreshMoeNewsIfStale.mockClear()
+    mockedMoeNewsSvc.refreshMoeNewsIfStale.mockResolvedValue(undefined)
+    mockedMoeNewsSvc.getMoeNewsPage.mockClear()
+    mockedMoeNewsSvc.getMoeNewsPage.mockResolvedValue([])
+    mockedMoeNewsSvc.getMoeNewsById.mockClear()
+    mockedMoeNewsSvc.getMoeNewsById.mockResolvedValue(null)
+    mockedMoeNewsSvc.countMoeNews.mockClear()
+    mockedMoeNewsSvc.countMoeNews.mockResolvedValue(0)
+    mockedMoeNewsSvc.buildLexicalContentFromPlainText.mockClear()
 
     SiaranModel.find = mockedModel.find
     SiaranModel.findById = mockedModel.findOne
@@ -124,6 +143,131 @@ describe('siaran controller', () => {
         },
       })
     })
+
+    test('merges MOE news into the unfiltered, articleDate-sorted browse view', async () => {
+      const mockSiarans = [{ _id: 'mockId', title: 'CMS Article', category: 'news', articleDate: new Date('2026-01-10') }]
+      mockQuery.lean.mockResolvedValue(mockSiarans)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
+
+      const mockMoeDoc = {
+        _id: { toString: () => 'moeId' },
+        title: 'MOE Article',
+        description: 'MOE article body',
+        sourceUrl: 'https://www.moe.gov.my/moe-article',
+        datePosted: new Date('2026-01-15'),
+        createdAt: new Date('2026-01-15'),
+        updatedAt: new Date('2026-01-15'),
+        images: [{ url: 'https://moe.gov.my/img.jpg', alt: 'alt' }],
+      }
+      mockedMoeNewsSvc.getMoeNewsPage.mockResolvedValue([mockMoeDoc])
+      mockedMoeNewsSvc.countMoeNews.mockResolvedValue(1)
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { page: 1, pageSize: 10, sortBy: 'articleDate', sortOrder: 'desc' },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
+
+      await getSiaranList(mockReq, mockReply)
+
+      expect(mockedMoeNewsSvc.refreshMoeNewsIfStale).toHaveBeenCalled()
+      expect(mockedMoeNewsSvc.getMoeNewsPage).toHaveBeenCalledWith(0, 10, {})
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          items: [
+            {
+              _id: 'moeId',
+              createdAt: mockMoeDoc.createdAt,
+              updatedAt: mockMoeDoc.updatedAt,
+              title: 'MOE Article',
+              articleDate: mockMoeDoc.datePosted,
+              content: { __mockLexicalFrom: 'MOE article body' },
+              source: 'moe',
+              sourceUrl: 'https://www.moe.gov.my/moe-article',
+              imageHero: { url: 'https://moe.gov.my/img.jpg', alt: 'alt' },
+            },
+            mockSiarans[0],
+          ],
+          totalRecords: 2,
+          pageNumber: 1,
+          pageSize: 10,
+        },
+      })
+    })
+
+    test('excludes MOE news when a category filter is active, even when sorted by articleDate', async () => {
+      const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
+      mockQuery.lean.mockResolvedValue(mockSiarans)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { category: 'news', page: 1, pageSize: 10, sortBy: 'articleDate', sortOrder: 'desc' },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
+
+      await getSiaranList(mockReq, mockReply)
+
+      expect(mockedMoeNewsSvc.refreshMoeNewsIfStale).not.toHaveBeenCalled()
+      expect(mockedMoeNewsSvc.getMoeNewsPage).not.toHaveBeenCalled()
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          items: mockSiarans,
+          totalRecords: 1,
+          pageNumber: 1,
+          pageSize: 10,
+        },
+      })
+    })
+
+    test('still filters MOE news by search and date range instead of excluding it', async () => {
+      const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
+      mockQuery.lean.mockResolvedValue(mockSiarans)
+      mockedModel.countDocuments = mock(() => Promise.resolve(1))
+      mockedMoeNewsSvc.getMoeNewsPage.mockResolvedValue([])
+      mockedMoeNewsSvc.countMoeNews.mockResolvedValue(0)
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: {
+          search: 'Test',
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-01-31'),
+          page: 1,
+          pageSize: 10,
+          sortBy: 'articleDate',
+          sortOrder: 'desc',
+        },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
+
+      await getSiaranList(mockReq, mockReply)
+
+      expect(mockedMoeNewsSvc.refreshMoeNewsIfStale).toHaveBeenCalled()
+      expect(mockedMoeNewsSvc.getMoeNewsPage).toHaveBeenCalledWith(0, 10, {
+        title: { $regex: 'Test', $options: 'i' },
+        datePosted: { $gte: new Date('2026-01-01'), $lte: new Date('2026-01-31') },
+      })
+      expect(mockedMoeNewsSvc.countMoeNews).toHaveBeenCalledWith({
+        title: { $regex: 'Test', $options: 'i' },
+        datePosted: { $gte: new Date('2026-01-01'), $lte: new Date('2026-01-31') },
+      })
+    })
   })
 
   describe('getSiaranById', () => {
@@ -150,6 +294,60 @@ describe('siaran controller', () => {
         status: 'SUCCESS',
         statusCode: 200,
         data: mockSiaran,
+      })
+    })
+
+    test('falls back to the MOE article when not found in Siaran', async () => {
+      const mockMoeArticle = {
+        _id: { toString: () => '507f1f77bcf86cd799439099' },
+        title: 'MOE Article',
+        description: 'MOE article body',
+        sourceUrl: 'https://www.moe.gov.my/moe-article',
+        datePosted: new Date('2026-01-15'),
+        createdAt: new Date('2026-01-15'),
+        updatedAt: new Date('2026-01-15'),
+        images: [
+          { url: 'https://moe.gov.my/img1.jpg', alt: 'first' },
+          { url: 'https://moe.gov.my/img2.jpg', alt: 'second' },
+        ],
+      }
+      mockedMoeNewsSvc.getMoeNewsById.mockResolvedValue(mockMoeArticle)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => ({
+          send: mock(() => ({})),
+        })),
+      } as unknown as FastifyReply
+      const mockReq = {
+        params: { id: '507f1f77bcf86cd799439099' },
+        log: { warn: mock(() => ({})) },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+      } as unknown as FastifyRequest<{ Params: GetSiaranByIdParams }>
+
+      mockQueryOne.lean.mockResolvedValue(null)
+
+      await getSiaranById(mockReq, mockReply)
+
+      expect(mockedMoeNewsSvc.getMoeNewsById).toHaveBeenCalledWith('507f1f77bcf86cd799439099')
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          _id: '507f1f77bcf86cd799439099',
+          createdAt: mockMoeArticle.createdAt,
+          updatedAt: mockMoeArticle.updatedAt,
+          title: 'MOE Article',
+          articleDate: mockMoeArticle.datePosted,
+          content: { __mockLexicalFrom: 'MOE article body' },
+          source: 'moe',
+          sourceUrl: 'https://www.moe.gov.my/moe-article',
+          imageHero: { url: 'https://moe.gov.my/img1.jpg', alt: 'first' },
+          images: [
+            { url: 'https://moe.gov.my/img1.jpg', alt: 'first' },
+            { url: 'https://moe.gov.my/img2.jpg', alt: 'second' },
+          ],
+        },
       })
     })
 

@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   DATA_URL: z.string().url(),
   CMS_URL: z.string().min(1),
   CMS_IMAGES_PATH: z.string().min(1),
+  MOE_NEWS_API_URL: z.string().url().default('https://www.moe.gov.my/api/v1/news'),
+  MOE_TAKWIM_API_URL: z.string().url().default('https://www.moe.gov.my/api/v1/takwim'),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -41,6 +43,8 @@ function mapSecrets(secrets: Record<string, unknown>) {
     S3_BUCKET_NAME: secrets.S3_BUCKET_NAME,
     CMS_URL: secrets.CMS_URL,
     CMS_IMAGES_PATH: secrets.CMS_IMAGES_PATH,
+    MOE_NEWS_API_URL: secrets.MOE_NEWS_API_URL,
+    MOE_TAKWIM_API_URL: secrets.MOE_TAKWIM_API_URL,
   }
 }
 

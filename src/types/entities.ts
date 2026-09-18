@@ -457,3 +457,18 @@ export interface DatasetStatus {
   lastUpdatedAt: Date
   fileVersion: string | null
 }
+
+export interface MoeNewsImage {
+  url: string
+  alt?: string
+}
+
+export interface MoeNewsArticle {
+  title: string
+  description: string
+  images?: MoeNewsImage[]
+  sourceUrl: string
+  datePosted: Date
+  createdAt: Date
+  updatedAt: Date
+}

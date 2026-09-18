@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sekolahku-fe",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "/Users/mohammadamirashraaf/Documents/project/sekolahku/sekolahku-fe", "run", "dev"],
+      "port": 5173,
+      "autoPort": true
+    }
+  ]
+}
