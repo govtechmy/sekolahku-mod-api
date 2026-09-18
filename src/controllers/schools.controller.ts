@@ -37,6 +37,22 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
 // Client requirement: show schools within 8km of the user's location by default.
 const DEFAULT_GEO_RADIUS_METERS = 8_000
 
+// Matches one or more comma-separated numeric postcodes (e.g. "56000" or "56000,57000").
+// Postcodes are literal codes, not free text, so a match here skips fuzzy/regex name search.
+const POSTCODE_QUERY_RE = /^\d{1,6}(\s*,\s*\d{1,6})*$/
+
+function parsePostcodeQuery(namaSekolah: string | undefined): string[] | null {
+  if (!namaSekolah || !POSTCODE_QUERY_RE.test(namaSekolah.trim())) return null
+  return [
+    ...new Set(
+      namaSekolah
+        .split(',')
+        .map(code => code.trim())
+        .filter(Boolean),
+    ),
+  ]
+}
+
 type SchoolSearchParams = {
   namaSekolah?: string
   negeri?: string
@@ -115,6 +131,23 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null },
     'data.infoLokasi.location.coordinates.1': { $exists: true, $ne: null },
   })
+
+  const total = await EntitiSekolahModel.countDocuments(query)
+  const items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
+
+  return { items, total }
+}
+
+/**
+ * Exact postcode lookup ("56000" or "56000,57000") — bypasses fuzzy/regex name
+ * matching since postcodes are literal codes, not free text. Ignores geo params
+ * (a postcode already pins down the area, no nearest-first sort needed).
+ */
+async function poskodSearchSchools(poskod: string[], params: SchoolSearchParams): Promise<SchoolSearchResult> {
+  const { negeri, jenis, peringkat, skip, limit } = params
+  const conditions = buildAttributeMatch({ negeri, peringkat, jenis })
+  conditions.push({ 'data.infoKomunikasi.poskodSurat': { $in: poskod } })
+  const query = { $and: conditions }
 
   const total = await EntitiSekolahModel.countDocuments(query)
   const items = (await EntitiSekolahModel.find(query).sort({ namaSekolah: 1 }).skip(skip).limit(limit).lean()) as unknown as EntitiSekolah[]
@@ -207,7 +240,8 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     // broke (e.g. "smk gombak" matched every SMK, ignoring "gombak"). fuzzySearchSchools also
     // handles the dropdown filters, geo radius, and — when there is no name query — delegates to
     // regexSearchSchools for the plain paginated list.
-    const { items, total } = await fuzzySearchSchools(params)
+    const poskodList = parsePostcodeQuery(namaSekolah)
+    const { items, total } = poskodList ? await poskodSearchSchools(poskodList, params) : await fuzzySearchSchools(params)
     return reply.send(
       createSuccessResponse({
         items,

@@ -4,6 +4,7 @@ import { TakwimModel } from 'src/models'
 import type { GetTakwimByIdParams, ListTakwimsQuery } from 'src/schemas/takwim'
 import { AttachmentService } from 'src/services/attachment.svc'
 import { ImageService } from 'src/services/image.svc'
+import { getMoeTakwimResource } from 'src/services/moeTakwim.svc'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -76,11 +77,17 @@ export async function getTakwimList(req: FastifyRequest<{ Querystring: ListTakwi
     })
   }
 
+  const moeTakwim = await getMoeTakwimResource().catch(err => {
+    req.log.error({ err }, 'moe-takwim:fetch-failed')
+    return null
+  })
+
   const response = createSuccessResponse({
     items: takwimList,
     totalRecords: total,
     pageNumber: page,
     pageSize,
+    moeTakwim,
   })
 
   return rep.send(response)
