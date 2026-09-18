@@ -1,3 +1,4 @@
+import type { Siaran, SiaranContent } from '@types'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Types } from 'mongoose'
 import { SiaranModel } from 'src/models'
@@ -12,8 +13,10 @@ import {
   getMoeNewsPage,
   refreshMoeNewsIfStale,
 } from 'src/services/moeNews.svc'
+import { extractLexicalPlainText } from 'src/utils/lexicalText.utils'
 import { escapeStringRegex } from 'src/utils/regex.utils'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
+import { parseSearchDateRange } from 'src/utils/searchDate.utils'
 
 export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiaransQuery }>, rep: FastifyReply) {
   const { search, category, page = 1, pageSize = 12, sortBy, sortOrder, startDate, endDate } = req.query
@@ -21,11 +24,14 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   const cachedCategories = req.server.categoriesCache
   const categoryMap = new Map(cachedCategories.filter(cat => cat._id).map(cat => [cat._id!.toString(), cat] as const))
 
-  // Search in title field only
-  if (search?.trim()) {
-    const escapedSearch = escapeStringRegex(search.trim())
-    query.title = { $regex: escapedSearch, $options: 'i' }
-  }
+  // Search matches title, description, or a date typed in the search box
+  // (dd/mm/yyyy, dd-mm-yyyy, or yyyy-mm-dd). Siaran (CMS) content has no
+  // stored plain-text field - only a Lexical tree - so its description match
+  // is done in JS below via extractLexicalPlainText, not pushed into `query`.
+  const trimmedSearch = search?.trim()
+  const searchTestRegex = trimmedSearch ? new RegExp(escapeStringRegex(trimmedSearch), 'i') : null
+  const searchMongoRegex = trimmedSearch ? { $regex: escapeStringRegex(trimmedSearch), $options: 'i' } : undefined
+  const searchDateRange = trimmedSearch ? parseSearchDateRange(trimmedSearch) : null
 
   if (category && category.length > 3) {
     const matchedCategories = cachedCategories.filter(cat => cat.value && cat.value.toLowerCase().includes(category.toLowerCase()))
@@ -50,22 +56,55 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   // MOE news is synced locally (see moeNews.svc), so search/date filters can
   // run against it same as Siaran. Category is Siaran-only taxonomy though,
   // so a category filter can never match a MOE article - exclude MOE then.
+  // MOE's `description` is a plain field, so it's matched at the DB level.
   const moeQuery: Record<string, unknown> = {}
-  if (search?.trim()) {
-    moeQuery.title = query.title
-  }
   if (Object.keys(dateQuery).length > 0) {
     moeQuery.datePosted = dateQuery
+  }
+  if (trimmedSearch) {
+    const moeOr: Record<string, unknown>[] = [{ title: searchMongoRegex }, { description: searchMongoRegex }]
+    if (searchDateRange) moeOr.push({ datePosted: searchDateRange })
+    moeQuery.$or = moeOr
   }
 
   const hasCategoryFilter = Boolean(category && category.length > 3)
   const includeMoe = !hasCategoryFilter && sortBy === 'articleDate'
 
   const skip = (page - 1) * pageSize
-  const sortedSiaranQuery = SiaranModel.find(query).sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-  const queryResult = includeMoe
-    ? await sortedSiaranQuery.limit(skip + pageSize).lean()
-    : await sortedSiaranQuery.skip(skip).limit(pageSize).lean()
+
+  // Matches a Siaran (CMS) doc against the search term: title text, the
+  // Lexical content walked into plain text, or a date typed in the box.
+  // ponytail: full-collection JS scan per search request (no stored
+  // plaintext/index for content) - move to an indexed excerpt field if the
+  // Siaran collection grows large enough for this to matter.
+  const matchesSearch = (doc: { title?: string; content?: SiaranContent; articleDate?: Date }): boolean => {
+    if (searchTestRegex) {
+      if (doc.title && searchTestRegex.test(doc.title)) return true
+      if (searchTestRegex.test(extractLexicalPlainText(doc.content))) return true
+    }
+    if (searchDateRange && doc.articleDate) {
+      const time = new Date(doc.articleDate).getTime()
+      if (time >= searchDateRange.$gte.getTime() && time <= searchDateRange.$lte.getTime()) return true
+    }
+    return false
+  }
+
+  let queryResult: (Siaran & { _id: Types.ObjectId; __v: number })[]
+  let total: number
+  if (trimmedSearch) {
+    const candidates = await SiaranModel.find(query)
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .lean()
+    const matched = candidates.filter(matchesSearch)
+    total = matched.length
+    queryResult = includeMoe ? matched.slice(0, skip + pageSize) : matched.slice(skip, skip + pageSize)
+  } else {
+    const sortedSiaranQuery = SiaranModel.find(query).sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+    queryResult = includeMoe
+      ? await sortedSiaranQuery.limit(skip + pageSize).lean()
+      : await sortedSiaranQuery.skip(skip).limit(pageSize).lean()
+    total = await SiaranModel.countDocuments(query)
+  }
 
   const siaranList: SiaranListItem[] = []
   queryResult.forEach(siaran => {
@@ -109,7 +148,6 @@ export async function getSiaranList(req: FastifyRequest<{ Querystring: ListSiara
   const imageSvc = new ImageService()
   const attachmentSvc = new AttachmentService()
 
-  let total = await SiaranModel.countDocuments(query)
   const imageIds = siaranList.map(siaran => siaran.image).filter(img => img) as string[]
   const attachmentIds = siaranList.flatMap(siaran => siaran.attachments?.map(att => att.file) || []).filter(img => img) as string[]
 
