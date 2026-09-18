@@ -563,6 +563,59 @@ describe('schools controller', () => {
       })
     })
 
+    test('should do an exact postcode lookup for a numeric query, bypassing fuzzy search', async () => {
+      const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School', data: { infoKomunikasi: { poskodSurat: '56000' } } }]
+      mockedModel.countDocuments.mockResolvedValueOnce(1)
+      mockQuery.lean.mockResolvedValueOnce(mockSchools)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: '56000', pageSize: 12 },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      expect(EntitiSekolahModel.countDocuments).toHaveBeenCalledTimes(1)
+      const queryStr = JSON.stringify(mockedModel.countDocuments.mock.calls[0]?.[0])
+      expect(queryStr).toContain('data.infoKomunikasi.poskodSurat')
+      expect(queryStr).toContain('56000')
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          items: mockSchools,
+          totalRecords: 1,
+          pageNumber: 1,
+          pageSize: 12,
+        },
+      })
+    })
+
+    test('should split comma-separated postcodes into a $in list', async () => {
+      mockedModel.countDocuments.mockResolvedValueOnce(0)
+      mockQuery.lean.mockResolvedValueOnce([])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: '56000,57000', pageSize: 12 },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      const queryStr = JSON.stringify(mockedModel.countDocuments.mock.calls[0]?.[0])
+      expect(queryStr).toContain('"$in":["56000","57000"]')
+    })
+
     test('should handle error', async () => {
       mockQuery.lean.mockRejectedValue(new Error('DB error'))
 
