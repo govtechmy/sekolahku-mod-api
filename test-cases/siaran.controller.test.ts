@@ -86,23 +86,27 @@ describe('siaran controller', () => {
       })
     })
 
-    test('should filter by search', async () => {
+    test('should filter by search (title, description, or date match)', async () => {
       const mockSiarans = [{ _id: 'mockId', title: 'Test Siaran', category: 'news' }]
       mockQuery.lean.mockResolvedValue(mockSiarans)
-      mockedModel.countDocuments = mock(() => Promise.resolve(1))
 
       const mockReply = {
         send: mock(() => ({})),
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { search: 'Test', page: 1, pageSize: 10 },
+        // sortBy/sortOrder unset defaults are applied by the zod schema in real
+        // requests, so set them explicitly here for the [sortBy] sort key.
+        query: { search: 'Test', page: 1, pageSize: 10, sortBy: 'articleDate', sortOrder: 'desc' },
         server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+        log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
 
       await getSiaranList(mockReq, mockReply)
 
-      expect(SiaranModel.find).toHaveBeenCalledWith({ title: { $regex: 'Test', $options: 'i' } })
+      // Search matching (title/description/date) happens in JS against the
+      // full category-filtered candidate set, not as a Mongo query filter.
+      expect(SiaranModel.find).toHaveBeenCalledWith({})
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
@@ -113,6 +117,59 @@ describe('siaran controller', () => {
           pageSize: 10,
         },
       })
+    })
+
+    test('matches a Siaran article by its Lexical content description', async () => {
+      const mockSiarans = [
+        {
+          _id: 'mockId',
+          title: 'Unrelated title',
+          category: 'news',
+          content: { root: { children: [{ children: [{ text: 'robotics competition' }] }] } },
+        },
+      ]
+      mockQuery.lean.mockResolvedValue(mockSiarans)
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { search: 'robotics', page: 1, pageSize: 10, sortBy: 'articleDate', sortOrder: 'desc' },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
+
+      await getSiaranList(mockReq, mockReply)
+
+      expect(mockReply.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ items: mockSiarans, totalRecords: 1 }),
+        }),
+      )
+    })
+
+    test('matches a Siaran article by a date typed in the search box', async () => {
+      const mockSiarans = [{ _id: 'mockId', title: 'Unrelated title', category: 'news', articleDate: new Date('2026-09-14T03:00:00.000Z') }]
+      mockQuery.lean.mockResolvedValue(mockSiarans)
+
+      const mockReply = {
+        send: mock(() => ({})),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { search: '14/09/2026', page: 1, pageSize: 10, sortBy: 'articleDate', sortOrder: 'desc' },
+        server: { categoriesCache: [{ _id: 'mockId', name: 'news', value: 'news' }] },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSiaransQuery }>
+
+      await getSiaranList(mockReq, mockReply)
+
+      expect(mockReply.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ items: mockSiarans, totalRecords: 1 }),
+        }),
+      )
     })
 
     test('should filter by category', async () => {
@@ -260,12 +317,12 @@ describe('siaran controller', () => {
 
       expect(mockedMoeNewsSvc.refreshMoeNewsIfStale).toHaveBeenCalled()
       expect(mockedMoeNewsSvc.getMoeNewsPage).toHaveBeenCalledWith(0, 10, {
-        title: { $regex: 'Test', $options: 'i' },
         datePosted: { $gte: new Date('2026-01-01'), $lte: new Date('2026-01-31') },
+        $or: [{ title: { $regex: 'Test', $options: 'i' } }, { description: { $regex: 'Test', $options: 'i' } }],
       })
       expect(mockedMoeNewsSvc.countMoeNews).toHaveBeenCalledWith({
-        title: { $regex: 'Test', $options: 'i' },
         datePosted: { $gte: new Date('2026-01-01'), $lte: new Date('2026-01-31') },
+        $or: [{ title: { $regex: 'Test', $options: 'i' } }, { description: { $regex: 'Test', $options: 'i' } }],
       })
     })
   })
