@@ -390,7 +390,7 @@ describe('schools controller', () => {
       })
     })
 
-    test('should rank candidates with fuzzball for a typo query (bufot -> Beaufort)', async () => {
+    test('should rank candidates in memory for a typo query (beaufrot -> Beaufort)', async () => {
       const beaufortSchool = {
         kodSekolah: 'XBA6036',
         namaSekolah: 'SEKOLAH KEBANGSAAN PEKAN BEAUFORT',
@@ -413,7 +413,7 @@ describe('schools controller', () => {
           },
         },
       }
-      // find(candidate set) → fuzzball rank → find(full docs by matched code).
+      // find(candidate set) → v2 in-memory rank → find(full docs by matched code).
       mockQuery.lean.mockResolvedValueOnce([beaufortSchool]).mockResolvedValueOnce([beaufortSchool])
 
       const mockReply = {
@@ -422,7 +422,7 @@ describe('schools controller', () => {
       } as unknown as FastifyReply
 
       const mockReq = {
-        query: { namaSekolah: 'bufot', pageSize: 12 },
+        query: { namaSekolah: 'beaufrot', pageSize: 12 },
         log: { error: mock(() => ({})) },
       } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
 
@@ -439,6 +439,42 @@ describe('schools controller', () => {
           pageSize: 12,
         },
       })
+    })
+
+    test('should list name matches nearest-first from originLatitude/originLongitude', async () => {
+      const at = (kodSekolah: string, namaSekolah: string, lng: number, lat: number) => ({
+        kodSekolah,
+        namaSekolah,
+        namaRingkas: [],
+        data: {
+          infoSekolah: {},
+          infoKomunikasi: {},
+          infoPentadbiran: {},
+          infoLokasi: { location: { type: 'Point', coordinates: [lng, lat] } },
+        },
+      })
+      const far = at('FAR0001', 'SEKOLAH KEBANGSAAN GOMBAK FAR', 101.7, 3.5)
+      const near = at('NEA0001', 'SEKOLAH KEBANGSAAN GOMBAK NEAR', 101.7, 3.0)
+      // find(candidates, relevance order far → near) → find(full docs by code).
+      mockQuery.lean.mockResolvedValueOnce([far, near]).mockResolvedValueOnce([far, near])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'gombak', pageSize: 12, originLatitude: 2.9, originLongitude: 101.7 },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      const sent = (mockReply.send as ReturnType<typeof mock>).mock.calls[0]?.[0] as {
+        data: { items: { kodSekolah: string; distance: number }[] }
+      }
+      expect(sent.data.items.map(item => item.kodSekolah)).toEqual(['NEA0001', 'FAR0001'])
+      expect(sent.data.items[0]!.distance).toBeLessThan(sent.data.items[1]!.distance)
     })
 
     test('should return search results with location', async () => {

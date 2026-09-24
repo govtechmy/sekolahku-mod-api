@@ -22,7 +22,7 @@ const EARTH_RADIUS_IN_METERS = 6378100 // Average radius of Earth in meters
 /**
  * Runs an aggregation that optionally filters schools by name and by the negeri/peringkat/jenis
  * dropdown filters.
- *  - When `name` is provided it ranks candidates with the in-memory fuzzball ranker (typo tolerant,
+ *  - When `name` is provided it ranks candidates with the in-memory v2 ranker (BM25 + char n-gram, typo tolerant,
  *    every query token must match) — consistent with /schools/search — then aggregates over the
  *    matched school codes so the downstream `$group` / `$sort` stages are unchanged.
  *  - When `name` is absent it runs the plain `$match` pipeline (unchanged legacy behaviour).
