@@ -93,7 +93,31 @@ describe('rankFuzzySchools v2 (BM25 + char n-gram TF-IDF)', () => {
     expect(codes(query)).toEqual([expectedCode])
   })
 
-  test('exact AND wins over fuzzy: only schools containing every token are returned', () => {
+  test('partial token match: GAMBUT finds SEGAMBUT, ranked below an exact GAMBUT', () => {
+    const gambut = [
+      school('WBA0100', 'SEKOLAH KEBANGSAAN SEGAMBUT', { bandarSurat: 'KUALA LUMPUR' }),
+      school('JBA0100', 'SEKOLAH KEBANGSAAN GAMBUT', { bandarSurat: 'KAHANG' }),
+    ]
+    expect(rankFuzzySchools('gambut', gambut).map(result => result.school.kodSekolah)).toEqual(['JBA0100', 'WBA0100'])
+  })
+
+  test.each([
+    ['persekutuam', 'PERSEKUTUAN'], // 11+ chars: near-substring window
+    ['pprsekutuan', 'PERSEKUTUAN'], // same length: rapidfuzz's swapped scan
+    ['mmhammadiah', 'MUHAMMADIAH'],
+  ])('long-token typo %s is a strict partial match on %s', (query, word) => {
+    const schools = [school('WBA0200', `SEKOLAH KEBANGSAAN ${word}`), school('WBA0201', 'SEKOLAH KEBANGSAAN LAIN')]
+    expect(rankFuzzySchools(query, schools).map(result => result.school.kodSekolah)).toEqual(['WBA0200'])
+  })
+
+  test('a 10-char non-substring token is not a partial match', () => {
+    // 'kebangsaax' is one letter off KEBANGSAAN but too short for the 95 partial threshold, so
+    // strict matching fails and only the fuzzy fallback (every school) can match.
+    const schools = [school('WBA0300', 'SEKOLAH KEBANGSAAN TAMAN'), school('WBA0301', 'SEKOLAH KEBANGSAAN BUKIT')]
+    expect(rankFuzzySchools('kebangsaax taman', schools).map(result => result.school.kodSekolah)).toEqual(['WBA0300'])
+  })
+
+  test('strict match wins over fuzzy: only schools containing every token are returned', () => {
     expect(codes('beaufort').sort()).toEqual(['XBA6036', 'XEA6001'])
     expect(codes('smk beaufort')).toEqual(['XEA6001'])
   })
