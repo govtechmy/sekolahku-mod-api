@@ -124,11 +124,10 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
     const countResult = await EntitiSekolahModel.aggregate([geoNearStage, { $count: 'total' }] as unknown as PipelineStage[])
     const total = (countResult[0] as { total?: number } | undefined)?.total ?? 0
 
-    const geoSort = namaSekolah ? { $sort: { distance: 1, namaSekolah: 1 } } : { $sort: { namaSekolah: 1 } }
-
+    // Nearest-first so page 1 is the closest schools (home "Sekolah Berdekatan" takes the top 3).
     const items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
       geoNearStage,
-      geoSort,
+      { $sort: { distance: 1, namaSekolah: 1 } },
       { $skip: skip },
       { $limit: limit },
     ] as unknown as PipelineStage[])

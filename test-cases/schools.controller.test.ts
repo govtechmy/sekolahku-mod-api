@@ -531,7 +531,7 @@ describe('schools controller', () => {
       expect(mockReply.send).toHaveBeenCalled()
     })
 
-    test('should sort by name for geo-only search without text query', async () => {
+    test('should sort nearest-first for geo-only search without text query', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
       // No text query → regex list path (geo): aggregate($count) then aggregate(data pipeline).
       mockedModel.aggregate.mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce(mockSchools)
@@ -549,7 +549,7 @@ describe('schools controller', () => {
 
       expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(2)
       const dataPipeline = mockedModel.aggregate.mock.calls[1]?.[0] as Record<string, unknown>[]
-      expect(JSON.stringify(dataPipeline)).toContain('"$sort":{"namaSekolah":1}')
+      expect(JSON.stringify(dataPipeline)).toContain('"$sort":{"distance":1,"namaSekolah":1}')
       expect(mockReply.send).toHaveBeenCalledWith({
         status: 'SUCCESS',
         statusCode: 200,
