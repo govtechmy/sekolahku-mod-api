@@ -61,8 +61,19 @@ type SchoolSearchParams = {
   latitude?: number
   longitude?: number
   radiusInMeter?: number
+  originLatitude?: number
+  originLongitude?: number
   skip: number
   limit: number
+}
+
+const EARTH_RADIUS_METERS = 6_371_000
+
+/** Great-circle distance in meters between two lat/lng points. */
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (degrees: number) => (degrees * Math.PI) / 180
+  const a = Math.sin(toRad(lat2 - lat1) / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(a))
 }
 
 type SchoolSearchResult = { items: EntitiSekolah[]; total: number }
@@ -158,8 +169,9 @@ async function poskodSearchSchools(poskod: string[], params: SchoolSearchParams)
 type SchoolWithDistance = EntitiSekolah & { distance?: number }
 
 async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSearchResult> {
-  const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, skip, limit } = params
+  const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, originLatitude, originLongitude, skip, limit } = params
   if (!namaSekolah) return regexSearchSchools(params)
+  const hasOrigin = originLatitude !== undefined && originLongitude !== undefined
 
   const conditions = buildAttributeMatch({ negeri, peringkat, jenis })
   const query: Record<string, unknown> = conditions.length > 0 ? { $and: conditions } : {}
@@ -192,10 +204,26 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
 
     // ponytail: O(n) scan is bounded to the filtered ~10k-school fallback set;
     // replace with a cached lightweight index only when fallback traffic warrants it.
-    candidates = (await EntitiSekolahModel.find(query, FUZZY_CANDIDATE_PROJECTION).lean()) as unknown as SchoolWithDistance[]
+    const projection = hasOrigin ? { ...FUZZY_CANDIDATE_PROJECTION, 'data.infoLokasi.location': 1 } : FUZZY_CANDIDATE_PROJECTION
+    candidates = (await EntitiSekolahModel.find(query, projection).lean()) as unknown as SchoolWithDistance[]
   }
 
-  const ranked = rankFuzzySchools(namaSekolah, candidates)
+  let ranked = rankFuzzySchools(namaSekolah, candidates)
+  // v2 decides WHICH schools match; with an origin they are listed nearest-first (ties and schools
+  // without coordinates keep relevance order, at the end).
+  if (hasOrigin && latitude === undefined) {
+    ranked = ranked
+      .map(result => {
+        const [lng, lat] = result.school.data?.infoLokasi?.location?.coordinates ?? []
+        const distance = lat != null && lng != null ? haversineMeters(originLatitude, originLongitude, lat, lng) : undefined
+        return { ...result, school: { ...result.school, distance } as SchoolWithDistance }
+      })
+      .sort((left, right) => {
+        const leftDistance = (left.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
+        const rightDistance = (right.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
+        return leftDistance - rightDistance
+      })
+  }
   const pageResults = ranked.slice(skip, skip + limit)
   const pageCodes = pageResults.map(result => result.school.kodSekolah)
   if (pageCodes.length === 0) return { items: [], total: ranked.length }
@@ -214,9 +242,21 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   return { items, total: ranked.length }
 }
 
-// School search suggestion — typo-tolerant fuzzy ranking (fuzzball) with regex fallback.
+// School search suggestion — typo-tolerant v2 ranking (BM25 + char n-gram TF-IDF) with regex fallback.
 export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>, reply: FastifyReply) {
-  const { page = 1, pageSize = 25, namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter } = req.query
+  const {
+    page = 1,
+    pageSize = 25,
+    namaSekolah,
+    negeri,
+    jenis,
+    peringkat,
+    latitude,
+    longitude,
+    radiusInMeter,
+    originLatitude,
+    originLongitude,
+  } = req.query
   const numericPage = Number(page) || 1
   const numericLimit = Number(pageSize)
   const skip = (numericPage - 1) * numericLimit
@@ -229,13 +269,15 @@ export async function getSchoolsSearchSuggestion(req: FastifyRequest<{ Querystri
     latitude,
     longitude,
     radiusInMeter,
+    originLatitude,
+    originLongitude,
     skip,
     limit: numericLimit,
   }
 
   try {
-    // Primary path: in-memory fuzzball ranker over the full school set. It tolerates spelling
-    // mistakes ("bufot" -> "Beaufort") and requires EVERY query token to match a field — which
+    // Primary path: in-memory v2 ranker (rankFuzzySchools) over the full school set. It tolerates
+    // spelling mistakes ("gombk" -> "Gombak") and requires EVERY query token to match — which
     // Atlas Search `fuzzy` (capped at maxEdits: 2) could not do, and which its synonym clause
     // broke (e.g. "smk gombak" matched every SMK, ignoring "gombak"). fuzzySearchSchools also
     // handles the dropdown filters, geo radius, and — when there is no name query — delegates to
