@@ -19,13 +19,15 @@ export const SCHOOL_NAME_SEARCH_PATHS = [
   'data.infoPentadbiran.negeri',
 ] as const
 
-// Port of fuzzy_api_v2.py (v2.3): BM25 over a per-school token corpus, with a
-// character n-gram TF-IDF cosine fallback for typos. Exact AND across every
-// query token wins; fuzzy expansion only runs when no school has them all.
+// Port of fuzzy_api_v2.py: BM25 over a per-school token corpus. Each query token first matches
+// strictly (exact, or contained in a longer word: GAMBUT -> SEGAMBUT); only when no school matches
+// every token that way does the character n-gram TF-IDF cosine fallback for typos run.
 const BM25_K1 = 1.2
 const BM25_B = 0.75
 const MIN_CHAR_TFIDF_SIMILARITY = 0.1
 const MAX_EXPANSIONS_PER_TOKEN = 100
+const TOKEN_PARTIAL_THRESHOLD = 95
+const PARTIAL_SIMILARITY_CAP = 0.95
 const SCORE_THRESHOLD = 55
 
 export type RankedFuzzySchool = {
@@ -106,7 +108,51 @@ export const FUZZY_CANDIDATE_PROJECTION = {
   'data.infoKomunikasi.bandarSurat': 1,
 } as const
 
-type Expansion = { token: string; similarity: number; exact: boolean }
+function longestCommonSubsequence(left: string, right: string): number {
+  let previous = new Array<number>(right.length + 1).fill(0)
+  for (const leftChar of left) {
+    const current = [0]
+    for (let index = 0; index < right.length; index++) {
+      current.push(leftChar === right[index] ? previous[index]! + 1 : Math.max(previous[index + 1]!, current[index]!))
+    }
+    previous = current
+  }
+  return previous[right.length]!
+}
+
+// Best indel ratio of `needle` against the haystack windows that can reach TOKEN_PARTIAL_THRESHOLD:
+// every window of the needle's length plus the shorter prefixes/suffixes at either edge. A window of
+// length L scores at most 200L/(n+L), so edge windows shorter than 95n/105 are skipped.
+function windowScan(needle: string, haystack: string): number {
+  const n = needle.length
+  const minEdge = Math.ceil((TOKEN_PARTIAL_THRESHOLD * n) / (200 - TOKEN_PARTIAL_THRESHOLD))
+  const score = (window: string) => (200 * longestCommonSubsequence(needle, window)) / (n + window.length)
+  let best = 0
+  for (let end = minEdge; end < n; end++) best = Math.max(best, score(haystack.slice(0, end)))
+  for (let start = 0; start + n <= haystack.length; start++) best = Math.max(best, score(haystack.slice(start, start + n)))
+  for (let start = haystack.length - n + 1; start <= haystack.length - minEdge; start++) {
+    best = Math.max(best, score(haystack.slice(start)))
+  }
+  return best
+}
+
+/**
+ * rapidfuzz `fuzz.partial_ratio(needle, haystack)` for `needle.length <= haystack.length`. Exact at
+ * or above TOKEN_PARTIAL_THRESHOLD; below it the result may be lower than rapidfuzz's (only the
+ * threshold comparison matters).
+ */
+function partialRatio(needle: string, haystack: string): number {
+  if (haystack.includes(needle)) return 100
+  // Without a full substring, a window scores at most 2(n-1)/(2n-1), below 95 for n <= 10.
+  if (needle.length <= 10) return 0
+  // rapidfuzz also scans with the roles swapped when both strings are the same length.
+  if (needle.length === haystack.length) return Math.max(windowScan(needle, haystack), windowScan(haystack, needle))
+  return windowScan(needle, haystack)
+}
+
+type MatchMethod = 'EXACT' | 'PARTIAL' | 'CHAR_TFIDF'
+type Expansion = { token: string; similarity: number; method: MatchMethod }
+type DocumentMatch = { contribution: number; similarity: number; method: MatchMethod }
 
 class SchoolCorpusIndex {
   private readonly postings = new Map<string, [number, number][]>()
@@ -116,14 +162,19 @@ class SchoolCorpusIndex {
   private readonly ngramIdf = new Map<string, number>()
   private readonly ngramNormByToken = new Map<string, number>()
   private readonly tokensByNgram = new Map<string, string[]>()
+  private readonly partialVocabulary: string[]
   readonly indexByCode = new Map<string, number>()
 
   constructor(private readonly schools: EntitiSekolah[]) {
     const ngramDocumentFrequency = new Map<string, number>()
+    const partialTokens = new Set<string>()
     schools.forEach((school, schoolIndex) => {
       this.indexByCode.set(school.kodSekolah, schoolIndex)
       const terms = new Map<string, number>()
       for (const [value, includeCompact] of searchableValues(school)) {
+        for (const token of normalizeSearchText(value).split(' ')) {
+          if (token.length > 1 || /^[0-9]+$/.test(token)) partialTokens.add(token)
+        }
         for (const token of corpusTokens(value, includeCompact)) {
           terms.set(token, (terms.get(token) ?? 0) + 1)
         }
@@ -147,6 +198,7 @@ class SchoolCorpusIndex {
       }
     })
 
+    this.partialVocabulary = [...partialTokens]
     const documentCount = schools.length
     for (const [ngram, frequency] of ngramDocumentFrequency) {
       this.ngramIdf.set(ngram, Math.log((documentCount + 1) / (frequency + 1)) + 1)
@@ -200,7 +252,7 @@ class SchoolCorpusIndex {
       const denominator = queryNorm * this.ngramNormByToken.get(vocabularyToken)!
       const similarity = denominator ? dotProduct / denominator : 0
       if (similarity < MIN_CHAR_TFIDF_SIMILARITY) continue
-      expansions.push({ token: vocabularyToken, similarity, exact: vocabularyToken === token })
+      expansions.push({ token: vocabularyToken, similarity, method: vocabularyToken === token ? 'EXACT' : 'CHAR_TFIDF' })
     }
     return expansions
       .sort(
@@ -212,6 +264,40 @@ class SchoolCorpusIndex {
       .slice(0, MAX_EXPANSIONS_PER_TOKEN)
   }
 
+  private partialExpansions(token: string): Expansion[] {
+    const expansions: Expansion[] = []
+    for (const vocabularyToken of this.partialVocabulary) {
+      if (vocabularyToken.length < token.length || vocabularyToken === token) continue
+      const score = partialRatio(token, vocabularyToken)
+      if (score >= TOKEN_PARTIAL_THRESHOLD) {
+        expansions.push({ token: vocabularyToken, similarity: Math.min(score / 100, PARTIAL_SIMILARITY_CAP), method: 'PARTIAL' })
+      }
+    }
+    if (this.postings.has(token)) expansions.push({ token, similarity: 1, method: 'EXACT' })
+    return expansions
+  }
+
+  /** Per school in `allowed`: the best (contribution, similarity, method) over `expansions`. */
+  private documentMatches(expansions: Expansion[], allowed: Set<number>): Map<number, DocumentMatch> {
+    const documentMatches = new Map<number, DocumentMatch>()
+    for (const expansion of expansions) {
+      for (const [schoolIndex, termFrequency] of this.postings.get(expansion.token) ?? []) {
+        if (!allowed.has(schoolIndex)) continue
+        const contribution = expansion.similarity * this.bm25(expansion.token, schoolIndex, termFrequency)
+        const current = documentMatches.get(schoolIndex)
+        if (
+          !current ||
+          expansion.similarity > current.similarity ||
+          (expansion.similarity === current.similarity && expansion.method === 'EXACT' && current.method !== 'EXACT') ||
+          (expansion.similarity === current.similarity && expansion.method === current.method && contribution > current.contribution)
+        ) {
+          documentMatches.set(schoolIndex, { contribution, similarity: expansion.similarity, method: expansion.method })
+        }
+      }
+    }
+    return documentMatches
+  }
+
   /**
    * Ranked school indices (into the array the index was built from) with scores, considering only
    * schools in `allowed` — the request's filtered/geo candidate set. IDF stays corpus-wide, as in
@@ -221,41 +307,18 @@ class SchoolCorpusIndex {
     const tokens = queryTokens(query)
     if (tokens.length === 0) return []
 
-    // Exact AND across all query tokens wins. Fuzzy is a fallback only
-    // when no school contains every token in the combined corpus.
-    let exactCandidates = new Set(
-      (this.postings.get(tokens[0]!) ?? []).map(([schoolIndex]) => schoolIndex).filter(schoolIndex => allowed.has(schoolIndex)),
-    )
-    for (const token of tokens.slice(1)) {
-      const withToken = new Set((this.postings.get(token) ?? []).map(([schoolIndex]) => schoolIndex))
-      exactCandidates = new Set([...exactCandidates].filter(schoolIndex => withToken.has(schoolIndex)))
+    const inEvery = (perToken: Map<number, DocumentMatch>[]) =>
+      [...perToken[0]!.keys()].filter(schoolIndex => perToken.every(matches => matches.has(schoolIndex)))
+
+    // Strict (exact/partial) matching wins when some school matches every token that way; fuzzy
+    // expansion is only the fallback.
+    const strictMatches = tokens.map(token => this.documentMatches(this.partialExpansions(token), allowed))
+    let candidateSchools = inEvery(strictMatches)
+    let perQueryMatches = strictMatches
+    if (candidateSchools.length === 0) {
+      perQueryMatches = tokens.map(token => this.documentMatches(this.expansions(token), allowed))
+      candidateSchools = inEvery(perQueryMatches)
     }
-    const exactMode = exactCandidates.size > 0
-
-    // Per query token: best (contribution, similarity, expansion) for each school.
-    const perQueryMatches = tokens.map(token => {
-      const expansions = exactMode ? [{ token, similarity: 1, exact: true }] : this.expansions(token)
-      const documentMatches = new Map<number, { contribution: number; similarity: number; exact: boolean }>()
-      for (const expansion of expansions) {
-        for (const [schoolIndex, termFrequency] of this.postings.get(expansion.token) ?? []) {
-          if (!allowed.has(schoolIndex) || (exactMode && !exactCandidates.has(schoolIndex))) continue
-          const contribution = expansion.similarity * this.bm25(expansion.token, schoolIndex, termFrequency)
-          const current = documentMatches.get(schoolIndex)
-          if (
-            !current ||
-            expansion.similarity > current.similarity ||
-            (expansion.similarity === current.similarity && contribution > current.contribution)
-          ) {
-            documentMatches.set(schoolIndex, { contribution, similarity: expansion.similarity, exact: expansion.exact })
-          }
-        }
-      }
-      return documentMatches
-    })
-
-    const candidateSchools = [...perQueryMatches[0]!.keys()].filter(schoolIndex =>
-      perQueryMatches.every(documentMatches => documentMatches.has(schoolIndex)),
-    )
 
     const rawResults = candidateSchools.map(schoolIndex => {
       const matches = perQueryMatches.map(documentMatches => documentMatches.get(schoolIndex)!)
@@ -263,11 +326,12 @@ class SchoolCorpusIndex {
         schoolIndex,
         bm25Total: matches.reduce((sum, match) => sum + match.contribution, 0),
         lexicalScore: matches.reduce((sum, match) => sum + match.similarity, 0) / matches.length,
-        exactMatches: matches.filter(match => match.exact).length,
+        exactMatches: matches.filter(match => match.method === 'EXACT').length,
       }
     })
     const maximumBm25 = Math.max(0, ...rawResults.map(result => result.bm25Total))
 
+    // Exact token matches always rank above partial/fuzzy ones, then by score.
     return rawResults
       .map(result => ({
         ...result,
@@ -278,7 +342,7 @@ class SchoolCorpusIndex {
         const leftName = String(this.schools[left.schoolIndex]!.namaSekolah ?? '')
         const rightName = String(this.schools[right.schoolIndex]!.namaSekolah ?? '')
         return (
-          right.score - left.score || right.exactMatches - left.exactMatches || (leftName < rightName ? -1 : leftName > rightName ? 1 : 0)
+          right.exactMatches - left.exactMatches || right.score - left.score || (leftName < rightName ? -1 : leftName > rightName ? 1 : 0)
         )
       })
       .map(({ schoolIndex, score }) => ({ schoolIndex, score }))
@@ -308,7 +372,8 @@ function getCorpusIndex(schools: EntitiSekolah[]): SchoolCorpusIndex {
 
 /**
  * Ranks a bounded school candidate set in memory (v2 algorithm, see SchoolCorpusIndex).
- * Every query token must match (exactly, or via a fuzzy expansion) for a school to be returned.
+ * Every query token must match (exactly, as part of a longer word, or via a fuzzy expansion) for a
+ * school to be returned; schools with more exact token matches rank first.
  */
 export function rankFuzzySchools(query: string, schools: EntitiSekolah[]): RankedFuzzySchool[] {
   // Results map back onto this request's objects by code: the cached index holds an earlier
