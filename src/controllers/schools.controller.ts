@@ -31,8 +31,8 @@ export async function getSchoolById(req: FastifyRequest<{ Params: { id: string }
   return reply.send(createSuccessResponse(doc))
 }
 
-// Atlas Search index/synonyms constants and query builders live in school-search.svc.ts so
-// /schools/search and /schools/find-nearby share a single fuzzy-search implementation.
+// The v2 fuzzy ranker lives in school-search.svc.ts so /schools/search and /schools/find-nearby
+// share a single fuzzy-search implementation.
 // Default geo radius (meters) when latitude/longitude are provided without radiusInMeter.
 // Client requirement: show schools within 8km of the user's location by default.
 const DEFAULT_GEO_RADIUS_METERS = 8_000
@@ -80,7 +80,7 @@ type SchoolSearchResult = { items: EntitiSekolah[]; total: number }
 
 /**
  * Legacy regex-based search. Used when there are no search criteria (plain list)
- * and as a graceful fallback when Atlas Search is unavailable.
+ * and as a graceful fallback when the fuzzy ranker fails.
  */
 async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSearchResult> {
   const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, skip, limit } = params
