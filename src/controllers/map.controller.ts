@@ -314,8 +314,7 @@ async function searchByName(params: {
   }
   const attributes = params.attributes ?? {}
 
-  // Fuzzy Atlas Search (typo tolerant + synonyms + code) within the geo radius and dropdown
-  // filters, with regex fallback.
+  // v2 fuzzy name ranking within the geo radius and dropdown filters, with regex fallback.
   const foundSchools = await aggregateSchoolsByName<EntitiSekolah>({
     name: params.name,
     matchConditions: [geoCondition, ...buildAttributeMatch(attributes)],
