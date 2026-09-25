@@ -14,6 +14,8 @@ const SCORE_THRESHOLD = 55
 export type RankedFuzzySchool = {
   school: EntitiSekolah
   score: number
+  /** Query tokens matched as a whole word in any searchable field (GAMBUT in "SK GAMBUT", not in "SEGAMBUT"). */
+  exactMatches: number
 }
 
 function normalizeSearchText(value: unknown): string {
@@ -284,7 +286,7 @@ class SchoolCorpusIndex {
    * schools in `allowed` — the request's filtered/geo candidate set. IDF stays corpus-wide, as in
    * v2 (which indexes every school).
    */
-  search(query: string, allowed: Set<number>): { schoolIndex: number; score: number }[] {
+  search(query: string, allowed: Set<number>): { schoolIndex: number; score: number; exactMatches: number }[] {
     const tokens = queryTokens(query)
     if (tokens.length === 0) return []
 
@@ -326,7 +328,7 @@ class SchoolCorpusIndex {
           right.exactMatches - left.exactMatches || right.score - left.score || (leftName < rightName ? -1 : leftName > rightName ? 1 : 0)
         )
       })
-      .map(({ schoolIndex, score }) => ({ schoolIndex, score }))
+      .map(({ schoolIndex, score, exactMatches }) => ({ schoolIndex, score, exactMatches }))
   }
 }
 
@@ -364,7 +366,7 @@ export function rankFuzzySchools(query: string, schools: EntitiSekolah[]): Ranke
   for (const school of schools) candidateByIndex.set(index.indexByCode.get(school.kodSekolah)!, school)
   return index
     .search(query, new Set(candidateByIndex.keys()))
-    .map(({ schoolIndex, score }) => ({ school: candidateByIndex.get(schoolIndex)!, score }))
+    .map(({ schoolIndex, score, exactMatches }) => ({ school: candidateByIndex.get(schoolIndex)!, score, exactMatches }))
 }
 
 // Dropdown filters shared by /schools/search and /schools/find-nearby. `'ALL'` (or empty)

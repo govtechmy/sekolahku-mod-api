@@ -80,8 +80,9 @@ export const listSchoolsSearchQuerySchema = z.object({
     .refine(v => v >= -180 && v <= 180)
     .optional(),
   radiusInMeter: z.coerce.number().positive().optional(),
-  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(), // Sort name-search results nearest-first from this point, without a radius limit (unlike
-  // latitude/longitude, which restrict to radiusInMeter).
+  peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
+  // List search results nearest-first from this point (name results: exact-word matches first), without
+  // a radius limit (unlike latitude/longitude, which restrict to radiusInMeter).
   originLatitude: z.coerce
     .number()
     .refine(v => v >= -90 && v <= 90)
