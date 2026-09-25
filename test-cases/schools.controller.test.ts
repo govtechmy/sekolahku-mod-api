@@ -477,6 +477,42 @@ describe('schools controller', () => {
       expect(sent.data.items[0]!.distance).toBeLessThan(sent.data.items[1]!.distance)
     })
 
+    test('should list exact-word matches before partial ones, each nearest-first from the origin', async () => {
+      const at = (kodSekolah: string, namaSekolah: string, lng: number, lat: number) => ({
+        kodSekolah,
+        namaSekolah,
+        namaRingkas: [],
+        data: {
+          infoSekolah: {},
+          infoKomunikasi: {},
+          infoPentadbiran: {},
+          infoLokasi: { location: { type: 'Point', coordinates: [lng, lat] } },
+        },
+      })
+      const partialNear = at('SEG0001', 'SEKOLAH KEBANGSAAN SEGAMBUT', 101.7, 3.0)
+      const exactFar = at('GAM0002', 'SEKOLAH KEBANGSAAN GAMBUT JAUH', 101.7, 3.8)
+      const exactNear = at('GAM0001', 'SEKOLAH KEBANGSAAN GAMBUT DEKAT', 101.7, 3.2)
+      const schools = [partialNear, exactFar, exactNear]
+      mockQuery.lean.mockResolvedValueOnce(schools).mockResolvedValueOnce(schools)
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { namaSekolah: 'gambut', pageSize: 12, originLatitude: 2.9, originLongitude: 101.7 },
+        log: { error: mock(() => ({})) },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      const sent = (mockReply.send as ReturnType<typeof mock>).mock.calls[0]?.[0] as {
+        data: { items: { kodSekolah: string }[] }
+      }
+      expect(sent.data.items.map(item => item.kodSekolah)).toEqual(['GAM0001', 'GAM0002', 'SEG0001'])
+    })
+
     test('should return search results with location', async () => {
       const mockSchools = [{ kodSekolah: '001', namaSekolah: 'Test School' }]
       // name + geo: aggregate($geoNear) for candidates, then find(full docs by matched code).
@@ -560,6 +596,28 @@ describe('schools controller', () => {
           pageSize: 25,
         },
       })
+    })
+
+    test('should list a filter-only search nearest-first from the origin, with no radius', async () => {
+      mockedModel.aggregate.mockResolvedValueOnce([])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        code: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      const mockReq = {
+        query: { negeri: 'SELANGOR', originLatitude: 3.1, originLongitude: 101.5 },
+      } as unknown as FastifyRequest<{ Querystring: ListSchoolsSearchQuery }>
+
+      await getSchoolsSearchSuggestion(mockReq, mockReply)
+
+      // No radius → countDocuments for the total, one $geoNear pass for the page.
+      expect(EntitiSekolahModel.aggregate).toHaveBeenCalledTimes(1)
+      const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as { $geoNear?: Record<string, unknown> }[]
+      expect(pipeline[0]!.$geoNear!.near).toEqual({ type: 'Point', coordinates: [101.5, 3.1] })
+      expect(pipeline[0]!.$geoNear).not.toHaveProperty('maxDistance')
+      expect(JSON.stringify(pipeline)).toContain('"$sort":{"distance":1,"namaSekolah":1}')
     })
 
     test('should apply negeri/jenis/peringkat filters to the fuzzy candidate query', async () => {
