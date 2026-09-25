@@ -83,7 +83,7 @@ type SchoolSearchResult = { items: EntitiSekolah[]; total: number }
  * and as a graceful fallback when the fuzzy ranker fails.
  */
 async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSearchResult> {
-  const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, skip, limit } = params
+  const { namaSekolah, negeri, jenis, peringkat, latitude, longitude, radiusInMeter, originLatitude, originLongitude, skip, limit } = params
   const conditions: Record<string, unknown>[] = []
 
   if (namaSekolah) {
@@ -105,24 +105,30 @@ async function regexSearchSchools(params: SchoolSearchParams): Promise<SchoolSea
 
   const query: Record<string, unknown> = conditions.length > 0 ? { $and: conditions } : {}
 
-  if (latitude !== undefined && longitude !== undefined) {
-    const effectiveRadius = radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS
+  // A geo radius (map area) or, without one, the user's origin: either way list nearest-first.
+  const hasGeo = latitude !== undefined && longitude !== undefined
+  if (hasGeo || (originLatitude !== undefined && originLongitude !== undefined)) {
     const geoNearStage = {
       $geoNear: {
         near: {
           type: 'Point' as const,
-          coordinates: [longitude, latitude] as [number, number],
+          coordinates: (hasGeo ? [longitude, latitude] : [originLongitude, originLatitude]) as [number, number],
         },
         distanceField: 'distance',
-        maxDistance: effectiveRadius,
+        ...(hasGeo ? { maxDistance: radiusInMeter ?? DEFAULT_GEO_RADIUS_METERS } : {}),
         spherical: true,
         key: 'data.infoLokasi.location',
         query,
       },
     }
 
-    const countResult = await EntitiSekolahModel.aggregate([geoNearStage, { $count: 'total' }] as unknown as PipelineStage[])
-    const total = (countResult[0] as { total?: number } | undefined)?.total ?? 0
+    // Without a radius every located match counts, so skip a second full $geoNear pass.
+    const countResult = hasGeo
+      ? await EntitiSekolahModel.aggregate([geoNearStage, { $count: 'total' }] as unknown as PipelineStage[])
+      : null
+    const total = countResult
+      ? ((countResult[0] as { total?: number } | undefined)?.total ?? 0)
+      : await EntitiSekolahModel.countDocuments({ ...query, 'data.infoLokasi.location.coordinates.0': { $exists: true, $ne: null } })
 
     // Nearest-first so page 1 is the closest schools (home "Sekolah Berdekatan" takes the top 3).
     const items = await EntitiSekolahModel.aggregate<EntitiSekolah>([
@@ -208,8 +214,8 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   }
 
   let ranked = rankFuzzySchools(namaSekolah, candidates)
-  // v2 decides WHICH schools match; with an origin they are listed nearest-first (ties and schools
-  // without coordinates keep relevance order, at the end).
+  // v2 decides WHICH schools match; with an origin, whole-word matches ("gambut" -> SK GAMBUT) come
+  // before partial ones (SEGAMBUT), each group nearest-first (ties keep relevance order).
   if (hasOrigin && latitude === undefined) {
     ranked = ranked
       .map(result => {
@@ -218,6 +224,7 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
         return { ...result, school: { ...result.school, distance } as SchoolWithDistance }
       })
       .sort((left, right) => {
+        if (left.exactMatches !== right.exactMatches) return right.exactMatches - left.exactMatches
         const leftDistance = (left.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
         const rightDistance = (right.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
         return leftDistance - rightDistance
