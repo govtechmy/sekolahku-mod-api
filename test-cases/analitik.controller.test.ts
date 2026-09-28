@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { getAnalitikData } from 'src/controllers/analitik.controller'
 import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 
 import { mockedModel, mockQueryOne } from './mock-type'
 
@@ -16,6 +17,8 @@ describe('analitik controller', () => {
 
     AnalitikSekolahModel.findOne = mockedModel.findOne
     DatasetStatusModel.findOne = mockedModel.findOne
+    EntitiSekolahModel.aggregate = mockedModel.aggregate
+    mockedModel.aggregate.mockClear()
   })
 
   describe('getAnalitikData', () => {
@@ -48,6 +51,47 @@ describe('analitik controller', () => {
         data: {
           ...mockAnalitikData,
           data: { ...mockAnalitikData.data, taburanNegeri },
+          fileVersion: null,
+        },
+      })
+    })
+
+    test('should live-count taburanNegeri from EntitiSekolah when not precomputed', async () => {
+      const mockAnalitikData = {
+        jumlahSekolah: 100,
+        jumlahGuru: 500,
+        jumlahPelajar: 2000,
+        data: { jenisLabel: [], bantuan: [] },
+        lastUpdatedAt: new Date(),
+      }
+      mockQueryOne.lean.mockResolvedValue(mockAnalitikData)
+      mockedModel.aggregate.mockResolvedValueOnce([
+        { _id: 'JOHOR', total: 60 },
+        { _id: 'PERAK', total: 40 },
+      ])
+
+      const mockReply = {
+        send: mock(() => ({})),
+        status: mock(() => mockReply),
+      } as unknown as FastifyReply
+
+      await getAnalitikData({} as FastifyRequest, mockReply)
+
+      // Groups by the nested EntitiSekolah field, not the raw Sekolah collection's top-level negeri.
+      const pipeline = mockedModel.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[]
+      expect(pipeline).toContainEqual({ $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } })
+      expect(mockReply.send).toHaveBeenCalledWith({
+        status: 'SUCCESS',
+        statusCode: 200,
+        data: {
+          ...mockAnalitikData,
+          data: {
+            ...mockAnalitikData.data,
+            taburanNegeri: [
+              { negeri: 'JOHOR', total: 60 },
+              { negeri: 'PERAK', total: 40 },
+            ],
+          },
           fileVersion: null,
         },
       })
