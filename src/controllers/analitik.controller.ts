@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { AnalitikSekolahModel, DatasetStatusModel, SekolahModel } from 'src/models'
+import { AnalitikSekolahModel, DatasetStatusModel } from 'src/models'
+import { EntitiSekolahModel } from 'src/models/entiti-sekolah.model'
 import type { FilterSchoolTypeWithPeringkatQuery } from 'src/schemas/analitik/response.schema'
 import { createErrorResponse, createSuccessResponse } from 'src/utils/response.util'
 
@@ -11,13 +12,15 @@ export async function getAnalitikData(req: FastifyRequest, res: FastifyReply) {
   }
 
   // School count per state, highest first. Prefer the precomputed breakdown on
-  // the analitik doc (kept consistent with jumlahSekolah); only live-count the
-  // Sekolah collection as a fallback for docs generated before this field.
+  // the analitik doc (kept consistent with jumlahSekolah); only live-count as a
+  // fallback for docs generated before this field. The live count reads
+  // EntitiSekolah — the collection /schools serves and jumlahSekolah matches —
+  // not the raw Sekolah collection, which holds extra rows and overcounted.
   let taburanNegeri = result.data?.taburanNegeri ?? []
   if (taburanNegeri.length === 0) {
-    const taburanNegeriRaw = await SekolahModel.aggregate<{ _id: string; total: number }>([
-      { $match: { negeri: { $ne: null } } },
-      { $group: { _id: '$negeri', total: { $sum: 1 } } },
+    const taburanNegeriRaw = await EntitiSekolahModel.aggregate<{ _id: string; total: number }>([
+      { $match: { 'data.infoPentadbiran.negeri': { $ne: null } } },
+      { $group: { _id: '$data.infoPentadbiran.negeri', total: { $sum: 1 } } },
       { $sort: { total: -1 } },
     ])
     taburanNegeri = taburanNegeriRaw.map(({ _id, total }) => ({ negeri: _id, total }))
