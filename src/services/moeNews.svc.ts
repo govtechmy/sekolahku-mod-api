@@ -30,6 +30,8 @@ export async function isMoeSyncStale(): Promise<boolean> {
 }
 
 export async function syncMoeNews(): Promise<void> {
+  const seenUrls: string[] = []
+  let reachedEnd = false
   for (let page = 1; page <= MAX_SYNC_PAGES; page++) {
     const response = await fetch(`${MOE_NEWS_API_URL}?page=${page}&limit=${SYNC_PAGE_LIMIT}`)
     if (!response.ok) {
@@ -37,6 +39,7 @@ export async function syncMoeNews(): Promise<void> {
     }
     const body = (await response.json()) as MoeNewsApiResponse
 
+    seenUrls.push(...body.data.map(item => item.source_url))
     await Promise.all(
       body.data.map(item =>
         MoeNewsModel.updateOne(
@@ -56,7 +59,16 @@ export async function syncMoeNews(): Promise<void> {
       ),
     )
 
-    if (!body.pagination.has_next) break
+    if (!body.pagination.has_next) {
+      reachedEnd = true
+      break
+    }
+  }
+
+  // MOE sometimes deletes articles. Mirror that, but only when the whole feed was
+  // read (a capped or empty read would wrongly wipe the collection).
+  if (reachedEnd && seenUrls.length > 0) {
+    await MoeNewsModel.deleteMany({ sourceUrl: { $nin: seenUrls } })
   }
 
   await SystemConfigModel.updateOne({ key: SYNC_CONFIG_KEY }, { $set: { value: true, updatedAt: new Date() } }, { upsert: true })
