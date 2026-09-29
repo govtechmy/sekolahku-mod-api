@@ -477,7 +477,7 @@ describe('schools controller', () => {
       expect(sent.data.items[0]!.distance).toBeLessThan(sent.data.items[1]!.distance)
     })
 
-    test('should list exact-word matches before partial ones, each nearest-first from the origin', async () => {
+    test('should list name matches purely nearest-first from the origin, exact-word or partial', async () => {
       const at = (kodSekolah: string, namaSekolah: string, lng: number, lat: number) => ({
         kodSekolah,
         namaSekolah,
@@ -510,7 +510,7 @@ describe('schools controller', () => {
       const sent = (mockReply.send as ReturnType<typeof mock>).mock.calls[0]?.[0] as {
         data: { items: { kodSekolah: string }[] }
       }
-      expect(sent.data.items.map(item => item.kodSekolah)).toEqual(['GAM0001', 'GAM0002', 'SEG0001'])
+      expect(sent.data.items.map(item => item.kodSekolah)).toEqual(['SEG0001', 'GAM0001', 'GAM0002'])
     })
 
     test('should return search results with location', async () => {

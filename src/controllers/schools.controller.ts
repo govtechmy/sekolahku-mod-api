@@ -214,8 +214,8 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
   }
 
   let ranked = rankFuzzySchools(namaSekolah, candidates)
-  // v2 decides WHICH schools match; with an origin, whole-word matches ("gambut" -> SK GAMBUT) come
-  // before partial ones (SEGAMBUT), each group nearest-first (ties keep relevance order).
+  // v2 decides WHICH schools match; with an origin they are listed purely nearest-first, so a nearby
+  // partial match (SEGAMBUT) comes before a far whole-word one (SK GAMBUT). Ties keep relevance order.
   if (hasOrigin && latitude === undefined) {
     ranked = ranked
       .map(result => {
@@ -224,7 +224,6 @@ async function fuzzySearchSchools(params: SchoolSearchParams): Promise<SchoolSea
         return { ...result, school: { ...result.school, distance } as SchoolWithDistance }
       })
       .sort((left, right) => {
-        if (left.exactMatches !== right.exactMatches) return right.exactMatches - left.exactMatches
         const leftDistance = (left.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
         const rightDistance = (right.school as SchoolWithDistance).distance ?? Number.MAX_VALUE
         return leftDistance - rightDistance

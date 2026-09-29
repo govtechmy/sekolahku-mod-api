@@ -81,7 +81,7 @@ export const listSchoolsSearchQuerySchema = z.object({
     .optional(),
   radiusInMeter: z.coerce.number().positive().optional(),
   peringkat: z.enum([...Object.values(PERINGKAT), 'ALL']).optional(),
-  // List search results nearest-first from this point (name results: exact-word matches first), without
+  // List search results nearest-first from this point, without
   // a radius limit (unlike latitude/longitude, which restrict to radiusInMeter).
   originLatitude: z.coerce
     .number()
