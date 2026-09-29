@@ -31,6 +31,7 @@ describe('moeNews service', () => {
     }))
 
     MoeNewsModel.updateOne = mock(() => Promise.resolve({})) as unknown as typeof MoeNewsModel.updateOne
+    MoeNewsModel.deleteMany = mock(() => Promise.resolve({})) as unknown as typeof MoeNewsModel.deleteMany
     MoeNewsModel.countDocuments = mock(() => Promise.resolve(3)) as unknown as typeof MoeNewsModel.countDocuments
 
     SystemConfigModel.findOne = mock(() => ({ lean: mock(() => Promise.resolve(null)) })) as unknown as typeof SystemConfigModel.findOne
@@ -135,6 +136,17 @@ describe('moeNews service', () => {
     test('stops paging once the API reports no next page', async () => {
       await syncMoeNews()
       expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    test('deletes stored articles that MOE no longer lists', async () => {
+      await syncMoeNews()
+      expect(MoeNewsModel.deleteMany).toHaveBeenCalledWith({ sourceUrl: { $nin: ['https://www.moe.gov.my/test-article'] } })
+    })
+
+    test('skips deletion when the page cap is hit before the feed ends', async () => {
+      global.fetch = mock(() => Promise.resolve(mockMoeNewsApiResponse({ hasNext: true }))) as unknown as typeof fetch
+      await syncMoeNews()
+      expect(MoeNewsModel.deleteMany).not.toHaveBeenCalled()
     })
 
     test('throws when the MOE API responds with an error status', async () => {
