@@ -32,9 +32,9 @@
     "seed:synonyms": "bun scripts/seed-synonyms.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.957.0",
-    "@aws-sdk/client-secrets-manager": "^3.940.0",
-    "@aws-sdk/s3-request-presigner": "^3.957.0",
+    "@aws-sdk/client-s3": "^3.1158.0",
+    "@aws-sdk/client-secrets-manager": "^3.1158.0",
+    "@aws-sdk/s3-request-presigner": "^3.1158.0",
     "@fastify/compress": "^8.1.0",
     "@fastify/cors": "^11.1.0",
     "@fastify/etag": "^6.1.0",
