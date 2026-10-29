@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import Fastify from 'fastify'
+import Fastify, { LogController } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
 
@@ -14,7 +14,9 @@ async function buildServer(): Promise<FastifyInstance> {
   //build the server
   const { isProduction, LOG_LEVEL } = config.env
   const app = Fastify({
-    disableRequestLogging: true, // Disable default request logging
+    // Disable default request logging. Fastify 5.12 deprecated the top-level
+    // disableRequestLogging option (FSTDEP023) in favour of a LogController.
+    logController: new LogController({ disableRequestLogging: true }),
     logger: {
       level: LOG_LEVEL ?? 'info',
       stream: {
