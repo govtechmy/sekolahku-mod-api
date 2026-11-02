@@ -19,6 +19,16 @@ describe('moeTakwim service', () => {
     expect(await getMoeTakwimResource()).toEqual({ url: 'https://moe.gov.my/kalendar.pdf', alt: 'Takwim' })
   })
 
+  test('converts the MOE date to ISO in Malaysia time', async () => {
+    global.fetch = mock(() =>
+      Promise.resolve(
+        mockTakwimApiResponse({ data: { url: 'https://moe.gov.my/kalendar.pdf', date: '2026-11-02 12:37:32', alt: 'Takwim' } }),
+      ),
+    ) as unknown as typeof fetch
+
+    expect((await getMoeTakwimResource())?.date).toBe('2026-11-02T12:37:32+08:00')
+  })
+
   test('caches the resource so a second call does not refetch', async () => {
     const fetchMock = mock(() =>
       Promise.resolve(mockTakwimApiResponse({ data: { url: 'https://moe.gov.my/kalendar.pdf', alt: 'Takwim' } })),
