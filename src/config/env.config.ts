@@ -27,6 +27,10 @@ const EnvSchema = z.object({
   CMS_IMAGES_PATH: z.string().min(1),
   MOE_NEWS_API_URL: z.string().url().default('https://www.moe.gov.my/api/v1/news'),
   MOE_TAKWIM_API_URL: z.string().url().default('https://www.moe.gov.my/api/v1/takwim'),
+  UMAMI_URL: z.string().url().default('https://umami.miniapp.malaysia.gov.my'),
+  UMAMI_WEBSITE_ID: z.string().optional(),
+  UMAMI_USERNAME: z.string().optional(),
+  UMAMI_PASSWORD: z.string().optional(),
 })
 
 function mapSecrets(secrets: Record<string, unknown>) {
@@ -45,6 +49,10 @@ function mapSecrets(secrets: Record<string, unknown>) {
     CMS_IMAGES_PATH: secrets.CMS_IMAGES_PATH,
     MOE_NEWS_API_URL: secrets.MOE_NEWS_API_URL,
     MOE_TAKWIM_API_URL: secrets.MOE_TAKWIM_API_URL,
+    UMAMI_URL: secrets.UMAMI_URL,
+    UMAMI_WEBSITE_ID: secrets.UMAMI_WEBSITE_ID,
+    UMAMI_USERNAME: secrets.UMAMI_USERNAME,
+    UMAMI_PASSWORD: secrets.UMAMI_PASSWORD,
   }
 }
 
